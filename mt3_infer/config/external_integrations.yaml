@@ -1,0 +1,83 @@
+# External Integration Provenance
+# Documents the source and migration details for each MT3 model adapter
+
+magenta_mt3:
+  source_repo: "https://github.com/magenta/mt3"
+  commit: "b4317d283efea3c95e9c34643149e000f334aaef"
+  commit_message: "fix uint32 initialization issue in layers.py"
+  license: "Apache-2.0"
+  migrated_to: "mt3_infer/adapters/magenta.py"
+  framework_upgrade:
+    from: "jax (original version)"
+    to: "jax==0.4.28, flax==0.8.2"
+  verified_on: "2025-10-05"
+  notes: |
+    Official Google Magenta implementation using JAX/Flax.
+    Deferred to v0.2.0 (not part of initial PyTorch-only release).
+
+mr_mt3:
+  source_repo: "https://github.com/gudgud96/MR-MT3"
+  commit: "826ea84a933f93cd707d11e91af711f1d19c8d79"
+  commit_message: "Update README.md"
+  license: "MIT"
+  license_copyright: "Copyright (c) 2024 Hao Hao Tan, Kin Wai Cheuk, Taemin Cho, Wei-Hsiang Liao, Yuki Mitsufuji"
+  migrated_to: "mt3_infer/adapters/mr_mt3.py"
+  framework_upgrade:
+    from: "torch (original version from repo)"
+    to: "torch==2.7.1, torchvision==0.22.1, torchaudio==2.7.1"
+  verified_on: "2025-10-05"
+  notes: |
+    Multi-Resolution MT3 - PyTorch implementation.
+    Priority adapter for v0.1.0 release.
+    Original checkpoint had Git LFS issues; will obtain checkpoint separately.
+
+mt3_pytorch:
+  source_repo: "https://github.com/rlax59us/MT3-pytorch"
+  commit: "a372ec5a1afc5ec0bbe464a1952a482a173ec2b1"
+  commit_message: "Update data_config.py"
+  license: "UNKNOWN - requires verification"
+  license_status: "No LICENSE file found in repository"
+  migrated_to: "mt3_infer/adapters/mt3_pytorch.py"
+  framework_upgrade:
+    from: "torch (original version from repo)"
+    to: "torch==2.7.1, torchvision==0.22.1, torchaudio==2.7.1"
+  verified_on: "2025-10-05"
+  notes: |
+    PyTorch port of MT3 model.
+    Priority adapter for v0.1.0 release.
+    License needs verification - may need to contact author or assume public domain/permissive.
+    ACTION REQUIRED: Verify license compatibility before production use.
+
+yourmt3:
+  source_repo: "https://huggingface.co/spaces/mimbres/YourMT3"
+  commit: "5e66c1ea173a8186e0d20432b841d3180cc015b5"
+  commit_message: "Update app.py"
+  license: "UNKNOWN - requires verification"
+  license_status: "No LICENSE file found in Hugging Face Space"
+  migrated_to: "mt3_infer/adapters/yourmt3.py"
+  framework_upgrade:
+    from: "tensorflow (original version)"
+    to: "tensorflow>=2.13.0"
+  verified_on: "2025-10-05"
+  notes: |
+    YourMT3 - TensorFlow implementation hosted on Hugging Face Spaces.
+    Deferred to v0.2.0 (not part of initial PyTorch-only release).
+    License needs verification from Hugging Face Space settings.
+    ACTION REQUIRED: Check Hugging Face repo settings for license information.
+
+# Migration Process Notes
+# -----------------------
+# All repositories cloned on 2025-10-05 using shallow clone (--depth 1).
+# Git LFS files skipped using GIT_LFS_SKIP_SMUDGE=1 to avoid downloading large checkpoint files.
+# Repositories stored in refs/ directory (gitignored, not part of package distribution).
+#
+# License Compatibility Summary:
+# - Magenta MT3: Apache-2.0 ✅ (permissive, compatible)
+# - MR-MT3: MIT ✅ (permissive, compatible)
+# - MT3-PyTorch: ⚠️ NEEDS VERIFICATION
+# - YourMT3: ⚠️ NEEDS VERIFICATION
+#
+# Next Steps:
+# 1. Verify licenses for MT3-PyTorch and YourMT3
+# 2. Extract inference code from each repository
+# 3. Add attribution headers per SPEC.md §10.1

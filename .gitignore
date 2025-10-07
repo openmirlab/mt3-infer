@@ -1,0 +1,58 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Reference repositories (implementation reference only, not part of package)
+refs/
+
+# Cached model checkpoints
+.cache/
+*.pth
+*.ckpt
+*.safetensors
+
+# Test coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Test outputs (MIDI files, audio files)
+*.mid
+*.wav
+!assets/*.wav
+test_output*/
+output.*
+
+# Development artifacts
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+*.egg-info/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg
+
+# Checkpoints (downloaded via download system)
+checkpoints/
+!checkpoints/.gitkeep

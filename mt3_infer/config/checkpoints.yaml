@@ -1,0 +1,105 @@
+# MT3-Infer Model Registry
+# Version: 0.1.0
+# Last Updated: 2025-10-06
+
+models:
+  mr_mt3:
+    name: "MR-MT3"
+    description: "Multi-instrument MT3 variant optimized for speed (57x real-time)"
+    framework: "pytorch"
+    adapter_class: "mt3_infer.adapters.mr_mt3.MRMT3Adapter"
+    checkpoint:
+      path: "refs/mr-mt3/pretrained/mt3.pth"
+      size_mb: 176.0
+      format: "pytorch"
+      download:
+        source_type: "git_lfs"
+        source_url: "https://github.com/gudgud96/MR-MT3"
+        branch: "master"
+        depth: 1
+    metadata:
+      vocab_size: 388
+      max_seq_len: 1024
+      sample_rate: 16000
+      verified_on: "2025-10-06"
+      performance:
+        speed_x_realtime: 57.0
+        peak_gpu_memory_mb: 269
+        notes_detected: 116  # HappySounds test
+    best_for:
+      - "Real-time applications"
+      - "Low-latency requirements"
+      - "Embedded systems"
+      - "Batch processing"
+
+  mt3_pytorch:
+    name: "MT3-PyTorch"
+    description: "Official MT3 architecture in PyTorch (best accuracy, 12x real-time)"
+    framework: "pytorch"
+    adapter_class: "mt3_infer.adapters.mt3_pytorch.MT3PyTorchAdapter"
+    checkpoint:
+      path: "refs/kunato-mt3-pytorch/pretrained/mt3.pth"
+      size_mb: 176.0
+      format: "pytorch"
+      download:
+        source_type: "git_lfs"
+        source_url: "https://github.com/kunato/mt3-pytorch"
+        branch: "master"
+        depth: 1
+    metadata:
+      vocab_size: 1536
+      max_seq_len: 1024
+      sample_rate: 16000
+      verified_on: "2025-10-06"
+      performance:
+        speed_x_realtime: 12.37
+        peak_gpu_memory_mb: 208
+        notes_detected: 147  # HappySounds test (+27% vs MR-MT3)
+    best_for:
+      - "Studio music production"
+      - "Accuracy-critical applications"
+      - "Multi-instrument separation"
+      - "General-purpose transcription"
+      - "Research and benchmarking (official baseline)"
+
+  yourmt3:
+    name: "YourMT3"
+    description: "Extended multi-task MT3 with 8-stem separation (~15x real-time)"
+    framework: "pytorch"
+    adapter_class: "mt3_infer.adapters.yourmt3.YourMT3Adapter"
+    checkpoint:
+      path: null  # YourMT3 adapter has built-in checkpoint resolution
+      size_mb: 522.0
+      format: "pytorch_lightning"
+      download:
+        source_type: "git_lfs"
+        source_url: "https://github.com/mimbres/YourMT3"
+        branch: "main"
+        depth: 1
+    metadata:
+      vocab_size: 1536
+      max_seq_len: 1024
+      sample_rate: 16000
+      num_stems: 8
+      verified_on: "2025-10-06"
+      performance:
+        speed_x_realtime: 15.0  # Estimated
+        peak_gpu_memory_mb: 300  # Estimated
+        notes_detected: 118  # HappySounds test
+    best_for:
+      - "Multi-task scenarios (8-stem separation)"
+      - "Extended instrument support"
+      - "Flexible configuration"
+      - "Research on multi-task MT3"
+
+# Default model
+default: "mt3_pytorch"  # Recommended: best balance of speed and accuracy
+
+# Model aliases for convenience
+aliases:
+  default: "mt3_pytorch"
+  fast: "mr_mt3"
+  accurate: "mt3_pytorch"
+  multitask: "yourmt3"
+  official: "mt3_pytorch"
+  baseline: "mt3_pytorch"

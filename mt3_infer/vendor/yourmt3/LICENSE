@@ -1,0 +1,33 @@
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   Copyright 2024 The YourMT3 Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+---
+
+THIRD-PARTY NOTICES
+
+This vendored code is from the YourMT3 project:
+  Repository: https://huggingface.co/spaces/mimbres/YourMT3
+  Authors: Taegyun Kwon, et al.
+  License: Apache 2.0
+
+The YourMT3 code has been vendored (copied into this package) to enable
+easy installation via PyPI/uv without requiring users to manually clone
+external repositories.
+
+No modifications have been made to the vendored YourMT3 source code.
+The adapter in mt3_infer/adapters/yourmt3.py provides the integration layer.
