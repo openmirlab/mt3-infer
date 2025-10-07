@@ -34,8 +34,8 @@ from model.spectrogram import get_spectrogram_layer_from_audio_cfg
 from model.conv_block import PreEncoderBlockRes3B
 from model.conv_block import PreEncoderBlockHFTT, PreEncoderBlockRes3BHFTT  # added for hFTT-like pre-encoder
 from model.projection_layer import get_projection_layer, get_multi_channel_projection_layer
-from model.optimizers import get_optimizer
-from model.lr_scheduler import get_lr_scheduler
+# from model.optimizers import get_optimizer  # DISABLED for inference-only (causes protobuf conflicts)
+# from model.lr_scheduler import get_lr_scheduler  # DISABLED for inference-only
 
 from utils.note_event_dataclasses import Note
 from utils.note2event import mix_notes
@@ -373,33 +373,11 @@ class YourMT3(pl.LightningModule):
                     pshift_range=[self.test_pitch_shift_semitone, self.test_pitch_shift_semitone])
 
     def configure_optimizers(self) -> None:
-        """Configure optimizer and scheduler"""
-        optimizer, base_lr = get_optimizer(models_dict=self.named_parameters(),
-                                           optimizer_name=self.hparams.optimizer_name,
-                                           base_lr=self.hparams.base_lr,
-                                           weight_decay=self.hparams.weight_decay)
-
-        if self.hparams.optimizer_name.lower() == 'adafactor' and self.hparams.base_lr == None:
-            print("Using AdaFactor with auto learning rate and no scheduler")
-            return [optimizer]
-        if self.hparams.optimizer_name.lower() == 'dadaptadam':
-            print("Using dAdaptAdam with auto learning rate and no scheduler")
-            return [optimizer]
-        elif self.hparams.base_lr == None:
-            print(f"Using default learning rate {base_lr} of {self.hparams.optimizer_name} as base learning rate.")
-            self.hparams.base_lr = base_lr
-
-        scheduler_cfg = self.shared_cfg["LR_SCHEDULE"]
-        if self.hparams.max_steps != -1:
-            # overwrite total_steps
-            scheduler_cfg["total_steps"] = self.hparams.max_steps
-        _lr_scheduler = get_lr_scheduler(optimizer,
-                                         scheduler_name=self.hparams.scheduler_name,
-                                         base_lr=base_lr,
-                                         scheduler_cfg=scheduler_cfg)
-
-        lr_scheduler = {'scheduler': _lr_scheduler, 'interval': 'step', 'frequency': 1}
-        return [optimizer], [lr_scheduler]
+        """Configure optimizer and scheduler (PATCHED for inference-only - skips optimizer setup)"""
+        # INFERENCE-ONLY PATCH: Skip optimizer/scheduler setup to avoid importing
+        # model.optimizers which causes protobuf conflicts with transformers/tensorflow
+        print("⚠️  configure_optimizers() called in inference-only mode - skipping")
+        return None  # Return None for inference-only (no training needed)
 
     def forward(
             self,

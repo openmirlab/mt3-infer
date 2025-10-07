@@ -37,23 +37,10 @@ from mt3_infer.base import MT3Base
 from mt3_infer.exceptions import CheckpointError, AudioError, InferenceError
 from mt3_infer.adapters import vocab_utils  # Proper codec-based decoding
 
-# Path to MR-MT3 reference code
-_MR_MT3_PATH = os.path.join(os.path.dirname(__file__), '../../refs/mr-mt3')
-if not os.path.exists(_MR_MT3_PATH):
-    raise ImportError(
-        f"MR-MT3 reference code not found at {_MR_MT3_PATH}. "
-        f"Ensure refs/mr-mt3 is cloned."
-    )
-
-
 def _import_t5_model():
-    """Lazy import MR-MT3's custom T5 model only (avoids contrib dependencies)."""
-    sys.path.insert(0, _MR_MT3_PATH)
-    try:
-        from models.t5 import T5ForConditionalGeneration
-        return T5ForConditionalGeneration
-    finally:
-        sys.path.pop(0)
+    """Import MR-MT3's custom T5 model from vendored code."""
+    from mt3_infer.vendor.mr_mt3.t5 import T5ForConditionalGeneration
+    return T5ForConditionalGeneration
 
 
 # Spectrogram constants (from contrib/spectrograms.py)
@@ -204,7 +191,8 @@ class MRMT3Adapter(MT3Base):
             self.model = T5ForConditionalGeneration(config)
 
             # Load checkpoint weights
-            state_dict = torch.load(checkpoint_path, map_location='cpu')
+            # Note: weights_only=False required for pickle compatibility with PyTorch 2.6+
+            state_dict = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
             self.model.load_state_dict(state_dict, strict=False)
 
             # Move to device and set eval mode

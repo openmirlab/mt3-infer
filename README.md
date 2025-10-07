@@ -74,6 +74,12 @@ mt3-infer list
 mt3-infer transcribe input.wav -o output.mid -m fast
 ```
 
+> **Heads up:** The downloader now pulls MR-MT3 weights directly from
+> [`gudgud1014/MR-MT3`](https://huggingface.co/gudgud1014/MR-MT3), so you no
+> longer need Git LFS for that model. Checkpoints are stored under
+> `.mt3_checkpoints/<model>` and will be re-created automatically if you delete
+> the directory.
+
 ---
 
 ## Supported Models
@@ -82,9 +88,11 @@ mt3-infer transcribe input.wav -o output.mid -m fast
 |-------|-------|-----------|-------|----------|------|----------|
 | **MR-MT3** | `fast` | PyTorch | **57x real-time** | 116 notes | 176 MB | Speed-critical apps |
 | **MT3-PyTorch** | `accurate`, `default` | PyTorch | 12x real-time | **147 notes** | 176 MB | General use, accuracy |
-| **YourMT3** | `multitask` | PyTorch + Lightning | ~15x real-time | 118 notes | 522 MB | Multi-stem separation |
+| **YourMT3** | `multitask` | PyTorch + Lightning | ~15x real-time | 118 notes | 536 MB | Multi-stem separation |
 
 *Tested on NVIDIA RTX 4090 with PyTorch 2.7.1 + CUDA 12.6*
+
+> Default `yourmt3` downloads the `YPTF.MoE+Multi (noPS)` checkpoint, matching the original YourMT3 Space output.
 
 ---
 

@@ -123,7 +123,8 @@ class MT3PyTorchAdapter(MT3Base):
             self._model: nn.Module = T5ForConditionalGeneration(config)
 
             # Load weights
-            state_dict = torch.load(weights_file, map_location='cpu')
+            # Note: weights_only=False required for pickle compatibility with PyTorch 2.6+
+            state_dict = torch.load(weights_file, map_location='cpu', weights_only=False)
             self._model.load_state_dict(state_dict, strict=True)
             self._model.eval()
             self._model.to(self._device)
@@ -192,10 +193,11 @@ class MT3PyTorchAdapter(MT3Base):
         # Stack into batch
         features = np.stack(spectrograms, axis=0)  # (batch, time, freq)
 
-        # Zero-pad spectrogram time dimension for chunks with less than MAX_LENGTH valid frames
+        # Clear frames beyond the valid region. Even when `p` equals MAX_LENGTH,
+        # the spectrogram includes one extra frame from the FFT window overlap, so
+        # we always zero everything from `p` onward to mirror the reference model.
         for i, p in enumerate(paddings):
-            if p < self.MAX_LENGTH:
-                features[i, p:] = 0
+            features[i, p:] = 0
 
         # Store frame times for decoding
         self._last_frame_times = frame_times_chunked
@@ -314,9 +316,9 @@ class MT3PyTorchAdapter(MT3Base):
     def _audio_to_frames(self, audio: np.ndarray):
         """Split audio into frames."""
         frame_size = self._spectrogram_processor.config.hop_width
-        padding_needed = frame_size - (len(audio) % frame_size)
-        if padding_needed != frame_size:
-            audio = np.pad(audio, (0, padding_needed), mode='constant')
+        remainder = len(audio) % frame_size
+        padding = frame_size - remainder if remainder != 0 else frame_size
+        audio = np.pad(audio, (0, padding), mode='constant')
 
         frames = self._spectrogram_processor.split_audio(audio)
         num_frames = len(audio) // frame_size

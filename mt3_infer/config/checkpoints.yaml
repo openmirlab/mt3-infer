@@ -9,14 +9,12 @@ models:
     framework: "pytorch"
     adapter_class: "mt3_infer.adapters.mr_mt3.MRMT3Adapter"
     checkpoint:
-      path: "refs/mr-mt3/pretrained/mt3.pth"
+      path: ".mt3_checkpoints/mr_mt3/mt3.pth"
       size_mb: 176.0
       format: "pytorch"
       download:
-        source_type: "git_lfs"
-        source_url: "https://github.com/gudgud96/MR-MT3"
-        branch: "master"
-        depth: 1
+        source_type: "url"
+        source_url: "https://huggingface.co/gudgud1014/MR-MT3/resolve/main/mt3.pth"
     metadata:
       vocab_size: 388
       max_seq_len: 1024
@@ -38,7 +36,7 @@ models:
     framework: "pytorch"
     adapter_class: "mt3_infer.adapters.mt3_pytorch.MT3PyTorchAdapter"
     checkpoint:
-      path: "refs/kunato-mt3-pytorch/pretrained/mt3.pth"
+      path: ".mt3_checkpoints/mt3_pytorch"
       size_mb: 176.0
       format: "pytorch"
       download:
@@ -46,6 +44,7 @@ models:
         source_url: "https://github.com/kunato/mt3-pytorch"
         branch: "master"
         depth: 1
+        target_path: "pretrained"
     metadata:
       vocab_size: 1536
       max_seq_len: 1024
@@ -64,33 +63,38 @@ models:
 
   yourmt3:
     name: "YourMT3"
-    description: "Extended multi-task MT3 with 8-stem separation (~15x real-time)"
-    framework: "pytorch"
+    description: "Advanced multi-task MT3 with 8-stem separation (Perceiver-TF + MoE)"
+    framework: "pytorch_lightning"
     adapter_class: "mt3_infer.adapters.yourmt3.YourMT3Adapter"
     checkpoint:
-      path: null  # YourMT3 adapter has built-in checkpoint resolution
-      size_mb: 522.0
+      path: ".mt3_checkpoints/yourmt3/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/last.ckpt"
+      size_mb: 536.0
       format: "pytorch_lightning"
       download:
         source_type: "git_lfs"
-        source_url: "https://github.com/mimbres/YourMT3"
+        source_url: "https://huggingface.co/spaces/mimbres/YourMT3"
         branch: "main"
         depth: 1
+        target_path: "amt/logs/2024/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/checkpoints/last.ckpt"
     metadata:
+      model_variant: "YPTF.MoE+Multi (noPS)"
       vocab_size: 1536
       max_seq_len: 1024
       sample_rate: 16000
       num_stems: 8
-      verified_on: "2025-10-06"
+      encoder: "Perceiver-TF"
+      decoder: "Multi-T5 (26 layers)"
+      architecture: "MoE (8 experts, top-k=2)"
+      verified_on: "2025-10-07"
       performance:
-        speed_x_realtime: 15.0  # Estimated
-        peak_gpu_memory_mb: 300  # Estimated
-        notes_detected: 118  # HappySounds test
+        speed_x_realtime: 15.0  # Estimated, to be tested
+        peak_gpu_memory_mb: 400  # Estimated
+        notes_detected: null  # To be tested
     best_for:
-      - "Multi-task scenarios (8-stem separation)"
-      - "Extended instrument support"
-      - "Flexible configuration"
-      - "Research on multi-task MT3"
+      - "Multi-instrument separation (8 stems)"
+      - "Detailed music transcription"
+      - "Multi-task scenarios"
+      - "Research on advanced MT3 architectures"
 
 # Default model
 default: "mt3_pytorch"  # Recommended: best balance of speed and accuracy

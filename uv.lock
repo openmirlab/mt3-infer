@@ -873,8 +873,8 @@ torch = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
-    { name = "einops", specifier = "==0.4.1" },
-    { name = "librosa", specifier = "==0.9.1" },
+    { name = "einops", specifier = ">=0.4.1" },
+    { name = "librosa", specifier = ">=0.9.1" },
     { name = "lightning", specifier = ">=2.3.0" },
     { name = "midi2audio", marker = "extra == 'synthesis'", specifier = ">=0.1.1" },
     { name = "mido", specifier = ">=1.3.0" },
@@ -882,7 +882,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "note-seq", specifier = "==0.0.3" },
     { name = "numpy", specifier = ">=1.22,<2.0" },
-    { name = "pretty-midi", specifier = "==0.2.9" },
+    { name = "pretty-midi", specifier = ">=0.2.9" },
     { name = "protobuf", specifier = ">=3.20.3,<4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },

@@ -72,23 +72,51 @@ class YourMT3Adapter(MT3Base):
 
     Args:
         model_key: One of the checkpoint keys: ymt3plus, yptf_single, yptf_multi,
-                   yptf_moe_nops, yptf_moe_ps. Default is ymt3plus (simplest).
+                   yptf_moe_nops, yptf_moe_ps. Defaults to the public MoE model
+                   (`yptf_moe_nops`).
     """
 
-    def __init__(self, model_key: str = "ymt3plus"):
+    def __init__(self, model_key: str | None = None):
         super().__init__()
 
-        if model_key not in CHECKPOINT_CONFIGS:
-            available = ", ".join(CHECKPOINT_CONFIGS.keys())
-            raise ModelNotFoundError(
-                f"Unknown YourMT3 model key '{model_key}'. "
-                f"Available: {available}"
-            )
-
-        self.model_key = model_key
-        self.config = CHECKPOINT_CONFIGS[model_key]
         self.model = None
         self.device_str = "cpu"
+        self._set_model_key(model_key)
+
+    def _set_model_key(self, model_key: str | None) -> None:
+        resolved_key = model_key or "yptf_moe_nops"
+        if resolved_key not in CHECKPOINT_CONFIGS:
+            available = ", ".join(CHECKPOINT_CONFIGS.keys())
+            raise ModelNotFoundError(
+                f"Unknown YourMT3 model key '{resolved_key}'. "
+                f"Available: {available}"
+            )
+        self.model_key = resolved_key
+        self.config = CHECKPOINT_CONFIGS[resolved_key]
+
+    def _checkpoint_components(self, key: str) -> tuple[str, str]:
+        checkpoint_spec = CHECKPOINT_CONFIGS[key]["checkpoint"]
+        if "@" in checkpoint_spec:
+            return tuple(checkpoint_spec.split("@", 1))  # (directory, filename)
+        return checkpoint_spec, ""
+
+    def _infer_model_key_from_checkpoint(self, checkpoint_path: Path) -> str | None:
+        checkpoint_str = str(checkpoint_path)
+        for key, cfg in CHECKPOINT_CONFIGS.items():
+            directory, filename = self._checkpoint_components(key)
+            if directory and directory in checkpoint_str:
+                return key
+            if filename and filename in checkpoint_path.name:
+                return key
+        return None
+
+    def _resolve_task_name(self) -> str:
+        args = self.config.get("args", [])
+        if "-tk" in args:
+            idx = args.index("-tk")
+            if idx + 1 < len(args):
+                return args[idx + 1]
+        return "mt3_full_plus"
 
     def load_model(
         self,
@@ -96,36 +124,56 @@ class YourMT3Adapter(MT3Base):
         device: str = "auto"
     ) -> None:
         """
-        Load YourMT3 model checkpoint.
+        Load YourMT3 model checkpoint using inference-only loader.
 
         Args:
-            checkpoint_path: Optional custom checkpoint path. If None, uses default
-                           checkpoint for the model_key.
+            checkpoint_path: Path to .ckpt checkpoint file. If None, looks for default
+                           checkpoint in checkpoints/ directory.
             device: Device to load model on ('auto', 'cuda', 'cpu')
         """
-        # The vendored YourMT3 code uses relative imports, so we need to
-        # add the vendor directory to sys.path
         import sys
 
         vendor_root = Path(__file__).parent.parent / "vendor" / "yourmt3"
         sys.path.insert(0, str(vendor_root))
 
         try:
-            from model_helper import load_model_checkpoint
+            from inference_loader import load_model_for_inference
 
             # Determine checkpoint path
             if checkpoint_path is None:
-                refs_root = Path(__file__).parent.parent.parent / "refs" / "yourmt3"
-                checkpoint_name = self.config["checkpoint"].split('@')[0]
-                checkpoint_file = self.config["checkpoint"].split('@')[1]
-                checkpoint_path = refs_root / "amt" / "logs" / "2024" / checkpoint_name / "checkpoints" / checkpoint_file
+                checkpoint_name, checkpoint_file = self._checkpoint_components(self.model_key)
+
+                checkpoints_dir = Path(__file__).parent.parent.parent / "checkpoints" / "yourmt3"
+                checkpoint_path = checkpoints_dir / checkpoint_name / checkpoint_file
 
                 if not checkpoint_path.exists():
-                    raise CheckpointError(
-                        f"Checkpoint not found at {checkpoint_path}. "
-                        f"Make sure you cloned YourMT3 with Git LFS: "
-                        f"git lfs pull in refs/yourmt3/"
+                    refs_checkpoint = (
+                        Path(__file__).parent.parent.parent
+                        / "refs"
+                        / "yourmt3"
+                        / "amt"
+                        / "logs"
+                        / "2024"
+                        / checkpoint_name
+                        / "checkpoints"
+                        / checkpoint_file
                     )
+                    if refs_checkpoint.exists():
+                        checkpoint_path = refs_checkpoint
+                    else:
+                        raise CheckpointError(
+                            f"Checkpoint not found. Tried:\n"
+                            f"  1. {checkpoints_dir / checkpoint_name / checkpoint_file}\n"
+                            f"  2. {refs_checkpoint}\n"
+                            f"Please download YourMT3 checkpoints or provide checkpoint_path."
+                        )
+
+            checkpoint_path = Path(checkpoint_path)
+
+            # Update model key if checkpoint points to a different variant
+            inferred_key = self._infer_model_key_from_checkpoint(checkpoint_path)
+            if inferred_key is not None and inferred_key != self.model_key:
+                self._set_model_key(inferred_key)
 
             # Determine device
             if device == "auto":
@@ -133,37 +181,18 @@ class YourMT3Adapter(MT3Base):
             else:
                 self.device_str = device
 
-            # Build arguments for load_model_checkpoint
-            # The load_model_checkpoint expects exp_id format: "exp_name@checkpoint_file"
-            checkpoint_arg = str(checkpoint_path).split('/')[-3] + '@' + str(checkpoint_path).split('/')[-1]
-            precision = '16' if self.device_str == 'cuda' else '32'
-            args = [checkpoint_arg, '-p', '2024', '-pr', precision] + self.config["args"]
-
-            # Load model
+            # Load model using inference-only loader
             print(f"Loading YourMT3 model: {self.config['name']}")
             print(f"Checkpoint: {checkpoint_path}")
             print(f"Device: {self.device_str}")
 
-            # The vendored code expects to be run from refs/yourmt3 directory
-            # (it uses relative paths for checkpoint loading)
-            import os
+            task_name = self._resolve_task_name()
 
-            original_cwd = os.getcwd()
-            refs_root = Path(__file__).parent.parent.parent / "refs" / "yourmt3"
-            os.chdir(str(refs_root))
-
-            try:
-                # Load on CPU first to avoid OOM
-                loaded_model = load_model_checkpoint(args=args, device="cpu")
-                loaded_model.eval()
-                self.model = loaded_model
-            finally:
-                # Restore original directory
-                os.chdir(original_cwd)
-
-            # Move to target device
-            if self.device_str == "cuda":
-                self.model = self.model.to("cuda")
+            self.model = load_model_for_inference(
+                checkpoint_path=str(checkpoint_path),
+                device=self.device_str,
+                task_name=task_name
+            )
 
             # Verify model is loaded
             if self.model is None:

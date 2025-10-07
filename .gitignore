@@ -56,3 +56,6 @@ dist/
 # Checkpoints (downloaded via download system)
 checkpoints/
 !checkpoints/.gitkeep
+
+# User-downloaded checkpoints (in user's project root)
+.mt3_checkpoints/

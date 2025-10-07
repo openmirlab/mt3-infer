@@ -80,7 +80,7 @@ def load_model(
 
     Args:
         model: Model identifier (e.g., "mr_mt3", "mt3_pytorch", "yourmt3")
-               or alias (e.g., "fast", "accurate", "multitask", "default").
+               or alias (e.g., "default", "official", "baseline").
         checkpoint_path: Override default checkpoint path (optional).
         device: Device placement ("cuda", "cpu", "auto"). Default is "auto".
         cache: Cache loaded models for reuse. Default is True.
@@ -100,11 +100,12 @@ def load_model(
         >>> # Load default model (mt3_pytorch) - auto-downloads if needed
         >>> model = load_model()
 
-        >>> # Load by alias
-        >>> fast_model = load_model("fast")  # Loads MR-MT3
-        >>> accurate_model = load_model("accurate")  # Loads MT3-PyTorch
+        >>> # Load by model identifier
+        >>> mr_mt3 = load_model("mr_mt3")  # 57x realtime
+        >>> mt3_pytorch = load_model("mt3_pytorch")  # 12x realtime, official
+        >>> yourmt3 = load_model("yourmt3")  # Multi-task
 
-        >>> # Load specific model
+        >>> # Load specific model with device
         >>> model = load_model("mt3_pytorch", device="cuda")
         >>> midi = model.transcribe(audio, sr=16000)
 
@@ -126,10 +127,11 @@ def load_model(
     # Determine checkpoint path
     if checkpoint_path is None:
         checkpoint_path = model_config["checkpoint"]["path"]
-        # Make path absolute relative to package root (if not None)
+        # Make path absolute relative to user's current working directory (if not None)
         if checkpoint_path is not None and not Path(checkpoint_path).is_absolute():
-            package_root = Path(__file__).parent.parent
-            checkpoint_path = str(package_root / checkpoint_path)
+            # Use current working directory so checkpoints download to user's project
+            user_cwd = Path.cwd()
+            checkpoint_path = str(user_cwd / checkpoint_path)
 
     # Auto-download if checkpoint is missing
     if checkpoint_path is not None and auto_download:
@@ -146,26 +148,60 @@ def load_model(
 
             # Determine output path based on source type
             if download_info["source_type"] == "git_lfs":
-                # For git repos, clone the entire repo to refs/<repo-name>/
+                # For git repos, clone to temp location then copy checkpoint
+                import shutil
+                import tempfile
+
                 repo_name = download_info["source_url"].rstrip("/").split("/")[-1]
-                output_path = Path(__file__).parent.parent / "refs" / repo_name
+
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    temp_clone_path = Path(tmpdir) / repo_name
+
+                    # Clone to temporary location
+                    download_checkpoint(
+                        source_type=download_info["source_type"],
+                        source_url=download_info["source_url"],
+                        output_path=temp_clone_path,
+                        **{k: v for k, v in download_info.items()
+                           if k not in ["source_type", "source_url", "target_path"]}
+                    )
+
+                    # Copy checkpoint file/directory to permanent location
+                    target_path = download_info.get("target_path", "")
+                    source_checkpoint = temp_clone_path / target_path
+
+                    if not source_checkpoint.exists():
+                        raise CheckpointDownloadError(
+                            f"Checkpoint not found in repository: {target_path}\n"
+                            f"Repository cloned to: {temp_clone_path}"
+                        )
+
+                    checkpoint_path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Handle both files and directories
+                    if source_checkpoint.is_file():
+                        shutil.copy2(source_checkpoint, checkpoint_path_obj)
+                    elif source_checkpoint.is_dir():
+                        if checkpoint_path_obj.exists():
+                            shutil.rmtree(checkpoint_path_obj)
+                        shutil.copytree(source_checkpoint, checkpoint_path_obj)
+
+                    print(f"✓ Checkpoint copied to: {checkpoint_path_obj}")
             else:
                 # For direct downloads, use the checkpoint path
-                output_path = checkpoint_path_obj
-
-            try:
-                download_checkpoint(
-                    source_type=download_info["source_type"],
-                    source_url=download_info["source_url"],
-                    output_path=output_path,
-                    **{k: v for k, v in download_info.items()
-                       if k not in ["source_type", "source_url"]}
-                )
-            except CheckpointDownloadError as e:
-                raise CheckpointDownloadError(
-                    f"Failed to download checkpoint for model '{model_name}':\n{e}\n\n"
-                    f"You can disable auto-download with: load_model('{model}', auto_download=False)"
-                )
+                try:
+                    download_checkpoint(
+                        source_type=download_info["source_type"],
+                        source_url=download_info["source_url"],
+                        output_path=checkpoint_path_obj,
+                        **{k: v for k, v in download_info.items()
+                           if k not in ["source_type", "source_url"]}
+                    )
+                except CheckpointDownloadError as e:
+                    raise CheckpointDownloadError(
+                        f"Failed to download checkpoint for model '{model_name}':\n{e}\n\n"
+                        f"You can disable auto-download with: load_model('{model}', auto_download=False)"
+                    )
     
     # Dynamically import adapter class
     adapter_class_path = model_config["adapter_class"]
@@ -183,11 +219,7 @@ def load_model(
     
     # Instantiate and load model
     # Handle adapter-specific initialization parameters
-    if model_name == "yourmt3":
-        # YourMT3 requires model_key parameter (default: "ymt3plus")
-        adapter = AdapterClass(model_key="ymt3plus")
-    else:
-        adapter = AdapterClass()
+    adapter = AdapterClass()
 
     adapter.load_model(checkpoint_path, device=device)
     
@@ -217,7 +249,7 @@ def transcribe(
     Args:
         audio: Audio waveform with shape (n_samples,) or (n_samples, n_channels).
                Values should be in range [-1.0, 1.0], dtype float32 or float64.
-        model: Model identifier or alias (e.g., "mr_mt3", "fast", "accurate").
+        model: Model identifier or alias (e.g., "mr_mt3", "mt3_pytorch", "yourmt3").
                Default is "default" (mt3_pytorch).
         sr: Sample rate in Hz. Default is 16000.
         checkpoint_path: Override default checkpoint path (optional).
@@ -236,21 +268,21 @@ def transcribe(
     Examples:
         >>> import numpy as np
         >>> from mt3_infer import transcribe
-        >>> 
+        >>>
         >>> # Simple transcription with default model
         >>> audio = np.random.randn(16000 * 5).astype(np.float32)
         >>> midi = transcribe(audio)
         >>> midi.save("output.mid")
-        >>> 
-        >>> # Use fastest model
-        >>> midi = transcribe(audio, model="fast")  # MR-MT3
-        >>> 
-        >>> # Use most accurate model
-        >>> midi = transcribe(audio, model="accurate")  # MT3-PyTorch
-        >>> 
-        >>> # Use multi-task model
-        >>> midi = transcribe(audio, model="multitask")  # YourMT3
-        >>> 
+        >>>
+        >>> # Use MR-MT3 (57x realtime)
+        >>> midi = transcribe(audio, model="mr_mt3")
+        >>>
+        >>> # Use MT3-PyTorch (12x realtime, official)
+        >>> midi = transcribe(audio, model="mt3_pytorch")
+        >>>
+        >>> # Use YourMT3 (multi-task)
+        >>> midi = transcribe(audio, model="yourmt3")
+        >>>
         >>> # Specify device
         >>> midi = transcribe(audio, model="mt3_pytorch", device="cuda")
     """
@@ -304,8 +336,8 @@ def get_model_info(model: str) -> Dict[str, Any]:
 
     Examples:
         >>> from mt3_infer import get_model_info
-        >>> 
-        >>> info = get_model_info("fast")  # Alias for MR-MT3
+        >>>
+        >>> info = get_model_info("mr_mt3")
         >>> print(info["name"])
         MR-MT3
         >>> print(info["metadata"]["performance"]["speed_x_realtime"])
@@ -347,7 +379,7 @@ def download_model(model: str = "default") -> Optional[Path]:
     - Preparing environments offline
 
     Args:
-        model: Model identifier or alias (e.g., "mr_mt3", "fast", "accurate").
+        model: Model identifier or alias (e.g., "mr_mt3", "mt3_pytorch", "yourmt3").
                Default is "default" (mt3_pytorch).
 
     Returns:
@@ -368,8 +400,8 @@ def download_model(model: str = "default") -> Optional[Path]:
         >>> for model_id in ["mr_mt3", "mt3_pytorch", "yourmt3"]:
         ...     download_model(model_id)
         >>>
-        >>> # Download by alias
-        >>> download_model("fast")  # Downloads MR-MT3
+        >>> # Download specific model
+        >>> download_model("mr_mt3")  # Downloads MR-MT3
     """
     # Resolve model name/alias
     model_name = _resolve_model_name(model)
@@ -384,10 +416,10 @@ def download_model(model: str = "default") -> Optional[Path]:
         print(f"✓ Model '{model_name}' uses built-in checkpoint resolution (no download needed)")
         return None
 
-    # Make path absolute relative to package root
+    # Make path absolute relative to user's current working directory
     if not Path(checkpoint_path).is_absolute():
-        package_root = Path(__file__).parent.parent
-        checkpoint_path = str(package_root / checkpoint_path)
+        user_cwd = Path.cwd()
+        checkpoint_path = str(user_cwd / checkpoint_path)
 
     checkpoint_path_obj = Path(checkpoint_path)
 
@@ -411,28 +443,65 @@ def download_model(model: str = "default") -> Optional[Path]:
 
     # Determine output path based on source type
     if download_info["source_type"] == "git_lfs":
-        # For git repos, clone the entire repo to refs/<repo-name>/
+        # For git repos, clone to temp location then copy checkpoint
+        import shutil
+        import tempfile
+
         repo_name = download_info["source_url"].rstrip("/").split("/")[-1]
-        output_path = Path(__file__).parent.parent / "refs" / repo_name
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_clone_path = Path(tmpdir) / repo_name
+
+            # Clone to temporary location
+            download_checkpoint(
+                source_type=download_info["source_type"],
+                source_url=download_info["source_url"],
+                output_path=temp_clone_path,
+                **{k: v for k, v in download_info.items()
+                   if k not in ["source_type", "source_url", "target_path"]}
+            )
+
+            # Copy checkpoint file/directory to permanent location
+            target_path = download_info.get("target_path", "")
+            source_checkpoint = temp_clone_path / target_path
+
+            if not source_checkpoint.exists():
+                raise CheckpointDownloadError(
+                    f"Checkpoint not found in repository: {target_path}\n"
+                    f"Repository cloned to: {temp_clone_path}"
+                )
+
+            checkpoint_path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+            # Handle both files and directories
+            if source_checkpoint.is_file():
+                shutil.copy2(source_checkpoint, checkpoint_path_obj)
+            elif source_checkpoint.is_dir():
+                if checkpoint_path_obj.exists():
+                    shutil.rmtree(checkpoint_path_obj)
+                shutil.copytree(source_checkpoint, checkpoint_path_obj)
+
+            print(f"\n✓ Model '{model_name}' checkpoint downloaded successfully")
+            print(f"  Location: {checkpoint_path}")
+
+            return checkpoint_path_obj
     else:
         # For direct downloads, use the checkpoint path
-        output_path = checkpoint_path_obj
+        try:
+            download_checkpoint(
+                source_type=download_info["source_type"],
+                source_url=download_info["source_url"],
+                output_path=checkpoint_path_obj,
+                **{k: v for k, v in download_info.items()
+                   if k not in ["source_type", "source_url"]}
+            )
 
-    try:
-        download_checkpoint(
-            source_type=download_info["source_type"],
-            source_url=download_info["source_url"],
-            output_path=output_path,
-            **{k: v for k, v in download_info.items()
-               if k not in ["source_type", "source_url"]}
-        )
+            print(f"\n✓ Model '{model_name}' checkpoint downloaded successfully")
+            print(f"  Location: {checkpoint_path}")
 
-        print(f"\n✓ Model '{model_name}' checkpoint downloaded successfully")
-        print(f"  Location: {checkpoint_path}")
+            return checkpoint_path_obj
 
-        return checkpoint_path_obj
-
-    except CheckpointDownloadError as e:
-        raise CheckpointDownloadError(
-            f"Failed to download checkpoint for model '{model_name}':\n{e}"
-        )
+        except CheckpointDownloadError as e:
+            raise CheckpointDownloadError(
+                f"Failed to download checkpoint for model '{model_name}':\n{e}"
+            )

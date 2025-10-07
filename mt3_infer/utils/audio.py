@@ -23,16 +23,11 @@ def load_audio(path: str, sr: int = 16000) -> Tuple[np.ndarray, int]:
 
     Returns:
         Tuple of (audio, sample_rate):
-        - audio: Float32 array with shape (n_samples,), normalized to [-1.0, 1.0].
+        - audio: Float32 array with shape (n_samples,).
         - sample_rate: Actual sample rate (should match `sr` after resampling).
 
     Raises:
         AudioError: File not found, unsupported format, or loading failed.
-
-    Example:
-        >>> audio, sr = load_audio("piano.wav", sr=16000)
-        >>> print(audio.shape, audio.dtype, sr)
-        (160000,) float32 16000
     """
     path_obj = Path(path)
 
@@ -42,50 +37,70 @@ def load_audio(path: str, sr: int = 16000) -> Tuple[np.ndarray, int]:
             f"Check that the path is correct and the file exists."
         )
 
+    target_sr = sr
+    torchaudio_audio = None
+    original_sr = target_sr
+
     try:
-        # Load audio using soundfile
-        audio, original_sr = sf.read(path, dtype="float32")
-    except Exception as e:
-        raise AudioError(
-            f"Failed to load audio from {path}: {e}\n"
-            f"Ensure the file is a valid audio format (WAV, FLAC, MP3, etc.)"
-        ) from e
+        import torchaudio
 
-    # Convert stereo to mono if needed
-    if audio.ndim == 2:
-        audio = np.mean(audio, axis=1).astype(np.float32)
+        waveform, original_sr = torchaudio.load(str(path_obj))
+        if waveform.size(0) > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
 
-    # Resample if needed
-    if original_sr != sr:
+        if original_sr != target_sr:
+            waveform = torchaudio.functional.resample(waveform, original_sr, target_sr)
+            original_sr = target_sr
+
+        torchaudio_audio = waveform.squeeze(0).detach().cpu().numpy().astype(np.float32)
+    except Exception:
+        torchaudio_audio = None
+
+    if torchaudio_audio is None:
         try:
-            # Simple linear resampling (for production, consider using librosa)
-            from scipy import signal
-            num_samples = int(len(audio) * sr / original_sr)
-            audio = signal.resample(audio, num_samples).astype(np.float32)
-        except ImportError:
-            # Fallback: warn and continue without resampling
-            import warnings
-            warnings.warn(
-                f"scipy not available for resampling. "
-                f"Audio will use original sample rate {original_sr}Hz instead of {sr}Hz. "
-                f"Install scipy for resampling: uv add scipy",
-                UserWarning
-            )
-            sr = original_sr
+            audio, original_sr = sf.read(path, dtype="float32")
+        except Exception as e:
+            raise AudioError(
+                f"Failed to load audio from {path}: {e}\n"
+                f"Ensure the file is a valid audio format (WAV, FLAC, MP3, etc.)"
+            ) from e
 
-    # Check for empty audio
-    if audio.size == 0:
+        if audio.ndim == 2:
+            audio = np.mean(audio, axis=1).astype(np.float32)
+
+        if original_sr != target_sr:
+            try:
+                from scipy import signal
+                num_samples = int(len(audio) * target_sr / original_sr)
+                audio = signal.resample(audio, num_samples).astype(np.float32)
+                original_sr = target_sr
+            except ImportError:
+                import warnings
+
+                warnings.warn(
+                    f"scipy not available for resampling. "
+                    f"Audio will use original sample rate {original_sr}Hz instead of {target_sr}Hz. "
+                    f"Install scipy for resampling: uv add scipy",
+                    UserWarning
+                )
+            except Exception as e:
+                raise AudioError(
+                    f"Resampling failed (from {original_sr}Hz to {target_sr}Hz): {e}"
+                ) from e
+
+        audio_out = audio.astype(np.float32)
+        sr_out = original_sr
+    else:
+        audio_out = torchaudio_audio
+        sr_out = target_sr
+
+    if audio_out.size == 0:
         raise AudioError(
             f"Loaded audio from {path} is empty (0 samples)\n"
             f"File may be corrupted or contain no audio data"
         )
 
-    # Normalize to [-1.0, 1.0] range
-    audio_max = np.abs(audio).max()
-    if audio_max > 0:
-        audio = audio / audio_max
-
-    return audio, sr
+    return audio_out, sr_out
 
 
 def validate_audio(audio: np.ndarray) -> Tuple[bool, str]:

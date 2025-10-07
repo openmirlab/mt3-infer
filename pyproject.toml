@@ -30,10 +30,10 @@ dependencies = [
     "torchvision==0.22.1",
     "torchaudio==2.7.1",
     "transformers~=4.30.2",
-    "librosa==0.9.1",
+    "librosa>=0.9.1",
     "note-seq==0.0.3",
-    "pretty-midi==0.2.9",
-    "einops==0.4.1",
+    "pretty-midi>=0.2.9",
+    "einops>=0.4.1",
     "protobuf>=3.20.3,<4.0",
     "scipy>=1.15.3",
     "tqdm>=4.67.1",
@@ -108,6 +108,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mt3_infer"]
+
+[tool.hatch.build]
+include = [
+    "mt3_infer/**/*.py",
+    "refs/**/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["mt3_infer/tests"]
