@@ -92,6 +92,8 @@ Or use `.env` files (requires `python-dotenv`):
 MT3_CHECKPOINT_DIR=/data/models/mt3
 ```
 
+When the variable is set, both the Python API and CLI (including `mt3-infer download`) will read/write checkpoints inside that directory, preserving the same per-model layout as `.mt3_checkpoints/`.
+
 ---
 
 ## Supported Models
@@ -144,6 +146,24 @@ from mt3_infer import load_model
 model = load_model("mr_mt3", auto_download=False)
 ```
 
+### Override Checkpoint Directory
+
+Use a shared storage location (e.g., NAS, cache volume) without changing your code:
+
+```bash
+export MT3_CHECKPOINT_DIR=/mnt/shared/mt3
+uv run python -c "from mt3_infer import download_model; download_model('yourmt3')"
+uv run mt3-infer download --all
+```
+
+To confirm the resolved location programmatically:
+
+```python
+from mt3_infer import download_model
+path = download_model('mt3_pytorch')
+print(path)
+```
+
 ### Download Programmatically
 
 ```python
@@ -154,6 +174,19 @@ download_model("mr_mt3")
 download_model("mt3_pytorch")
 download_model("yourmt3")
 ```
+
+---
+
+## Diagnostics & Troubleshooting
+
+Extra smoke tests and tooling live in `examples/diagnostics/`:
+
+- `download_mt3_pytorch.py` – manual vs. automatic checkpoint download walkthrough
+- `test_all_models.py` – Loads all registered models and runs a short transcription
+- `test_checkpoint_download.py` – Verifies checkpoints land in `MT3_CHECKPOINT_DIR`
+- `test_yourmt3.py` – Full audio-to-MIDI flow for the YourMT3 MoE model
+
+Run them via `uv run python examples/diagnostics/<script>.py` after setting any needed environment variables.
 
 ---
 

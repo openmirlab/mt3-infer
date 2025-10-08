@@ -73,6 +73,19 @@ uv run python examples/verify_yourmt3.py
 
 ---
 
+## Diagnostics Utilities
+
+Additional troubleshooting and regression scripts now live under `examples/diagnostics/`:
+
+- `download_mt3_pytorch.py` – Demonstrates manual vs. automatic checkpoint download flows.
+- `test_all_models.py` – End-to-end transcription smoke test for MR-MT3, MT3-PyTorch, and YourMT3.
+- `test_checkpoint_download.py` – Verifies checkpoint download destinations and quick inference sanity checks.
+- `test_yourmt3.py` – Full-length integration test for YourMT3 with audio transcription and MIDI export.
+
+Run them the same way as other examples, e.g. `uv run python examples/diagnostics/test_all_models.py`.
+
+---
+
 ## Running Examples
 
 All examples use `uv run` to ensure correct environment:
