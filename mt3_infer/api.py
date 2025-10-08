@@ -5,6 +5,7 @@ This module provides high-level functions for model loading and transcription.
 """
 
 import importlib
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -127,11 +128,18 @@ def load_model(
     # Determine checkpoint path
     if checkpoint_path is None:
         checkpoint_path = model_config["checkpoint"]["path"]
-        # Make path absolute relative to user's current working directory (if not None)
-        if checkpoint_path is not None and not Path(checkpoint_path).is_absolute():
-            # Use current working directory so checkpoints download to user's project
-            user_cwd = Path.cwd()
-            checkpoint_path = str(user_cwd / checkpoint_path)
+        if checkpoint_path is not None:
+            checkpoint_path_obj = Path(checkpoint_path)
+            env_dir = os.getenv("MT3_CHECKPOINT_DIR")
+            if env_dir and not checkpoint_path_obj.is_absolute():
+                base_dir = Path(env_dir).expanduser()
+                try:
+                    checkpoint_path_obj = base_dir / checkpoint_path_obj.relative_to(".mt3_checkpoints")
+                except ValueError:
+                    checkpoint_path_obj = base_dir / checkpoint_path_obj
+            elif not checkpoint_path_obj.is_absolute():
+                checkpoint_path_obj = Path.cwd() / checkpoint_path_obj
+            checkpoint_path = str(checkpoint_path_obj)
 
     # Auto-download if checkpoint is missing
     if checkpoint_path is not None and auto_download:
@@ -416,12 +424,20 @@ def download_model(model: str = "default") -> Optional[Path]:
         print(f"✓ Model '{model_name}' uses built-in checkpoint resolution (no download needed)")
         return None
 
-    # Make path absolute relative to user's current working directory
-    if not Path(checkpoint_path).is_absolute():
-        user_cwd = Path.cwd()
-        checkpoint_path = str(user_cwd / checkpoint_path)
-
     checkpoint_path_obj = Path(checkpoint_path)
+
+    if not checkpoint_path_obj.is_absolute():
+        env_dir = os.getenv("MT3_CHECKPOINT_DIR")
+        if env_dir:
+            base_dir = Path(env_dir).expanduser()
+            try:
+                checkpoint_path_obj = base_dir / checkpoint_path_obj.relative_to(".mt3_checkpoints")
+            except ValueError:
+                checkpoint_path_obj = base_dir / checkpoint_path_obj
+        else:
+            checkpoint_path_obj = Path.cwd() / checkpoint_path_obj
+
+    checkpoint_path = str(checkpoint_path_obj)
 
     # Check if already downloaded
     if checkpoint_path_obj.exists():

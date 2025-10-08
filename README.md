@@ -80,6 +80,18 @@ mt3-infer transcribe input.wav -o output.mid -m fast
 > `.mt3_checkpoints/<model>` and will be re-created automatically if you delete
 > the directory.
 
+Set `MT3_CHECKPOINT_DIR` to store checkpoints somewhere else (e.g., shared storage) before running downloads or inference:
+
+```bash
+export MT3_CHECKPOINT_DIR=/data/models/mt3
+```
+
+Or use `.env` files (requires `python-dotenv`):
+
+```bash
+MT3_CHECKPOINT_DIR=/data/models/mt3
+```
+
 ---
 
 ## Supported Models
