@@ -41,6 +41,8 @@ dependencies = [
     "mir-eval>=0.8.2",
     "wandb>=0.22.1",
     "soxr>=1.0.0",
+    "matplotlib>=3.10.6",
+    "pyloudnorm>=0.1.1",
 ]
 
 [project.optional-dependencies]

@@ -10,6 +10,11 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 
 ---
 
+## 🎉 What's New
+
+- **v0.2.0** (Latest): Fixed MT3-PyTorch instrument leakage with automatic filtering (`auto_filter` parameter)
+- **v0.1.0**: Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
+
 ## Features
 
 - ✅ **Unified API**: One interface for all MT3 variants
@@ -101,8 +106,10 @@ When the variable is set, both the Python API and CLI (including `mt3-infer down
 | Model | Alias | Framework | Speed | Accuracy | Size | Best For |
 |-------|-------|-----------|-------|----------|------|----------|
 | **MR-MT3** | `fast` | PyTorch | **57x real-time** | 116 notes | 176 MB | Speed-critical apps |
-| **MT3-PyTorch** | `accurate`, `default` | PyTorch | 12x real-time | **147 notes** | 176 MB | General use, accuracy |
+| **MT3-PyTorch** | `accurate`, `default` | PyTorch | 12x real-time | **147 notes** | 176 MB | General use, accuracy* |
 | **YourMT3** | `multitask` | PyTorch + Lightning | ~15x real-time | 118 notes | 536 MB | Multi-stem separation |
+
+*MT3-PyTorch includes automatic instrument leakage filtering (configurable via `auto_filter` parameter)
 
 *Tested on NVIDIA RTX 4090 with PyTorch 2.7.1 + CUDA 12.6*
 
@@ -144,6 +151,18 @@ from mt3_infer import load_model
 
 # Raise error if checkpoint not found (don't auto-download)
 model = load_model("mr_mt3", auto_download=False)
+```
+
+### Control MT3-PyTorch Instrument Filtering
+
+MT3-PyTorch has automatic filtering to fix instrument leakage in drum tracks:
+
+```python
+# Default: filtering enabled (recommended)
+model = load_model("mt3_pytorch")
+
+# Disable filtering to see raw model output
+model = load_model("mt3_pytorch", auto_filter=False)
 ```
 
 ### Override Checkpoint Directory

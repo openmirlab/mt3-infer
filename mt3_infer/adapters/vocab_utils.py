@@ -308,8 +308,28 @@ def decode_note_event(
             state.active_pitches[(pitch, 9)] = (time, state.current_velocity)
 
     elif event.type == 'tie':
-        # Enter tie section (notes continuing from previous segment)
-        state.is_tie_section = True
+        # End tie section and close notes that were not re-declared as tied.
+        if not state.is_tie_section:
+            raise ValueError('tie section end event when not in tie section')
+
+        for (pitch, program), (onset_time, onset_velocity) in list(state.active_pitches.items()):
+            if (pitch, program) in state.tied_pitches:
+                continue
+
+            end_time = max(time, onset_time + MIN_NOTE_DURATION)
+            state.note_sequence.notes.append(Note(
+                pitch=pitch,
+                start_time=onset_time,
+                end_time=end_time,
+                velocity=onset_velocity,
+                program=0 if program == 9 else program,
+                is_drum=(program == 9)
+            ))
+            state.note_sequence.total_time = max(state.note_sequence.total_time, end_time)
+            state.active_pitches.pop((pitch, program), None)
+
+        state.tied_pitches.clear()
+        state.is_tie_section = False
 
     else:
         raise ValueError(f'Unknown event type: {event.type}')
@@ -317,6 +337,7 @@ def decode_note_event(
 
 def begin_tied_pitches_section(state: NoteDecodingState) -> None:
     """Enter tie section at beginning of segment."""
+    state.tied_pitches = set()
     state.is_tie_section = True
 
 

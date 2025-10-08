@@ -1,0 +1,113 @@
+/home/worzpro/Desktop/dev/patched_modules/mt3-infer/.venv/lib/python3.10/site-packages/librosa/util/files.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+MT3-PYTORCH INSTRUMENT LEAKAGE INVESTIGATION
+============================================================
+Test file: assets/HappySounds_120bpm_Drums_drum_120BPM_BANDLAB.wav
+Audio loaded: 16.00s @ 16000Hz
+
+============================================================
+STEP 1: REPRODUCING ISSUE
+============================================================
+Generating MIDI:   0%|          | 0/8 [00:00<?, ?it/s]Generating MIDI:  12%|█▎        | 1/8 [00:00<00:02,  2.90it/s]Generating MIDI:  25%|██▌       | 2/8 [00:00<00:01,  4.43it/s]Generating MIDI:  38%|███▊      | 3/8 [00:00<00:01,  4.76it/s]Generating MIDI:  50%|█████     | 4/8 [00:00<00:00,  5.48it/s]Generating MIDI:  62%|██████▎   | 5/8 [00:01<00:00,  5.31it/s]Generating MIDI:  75%|███████▌  | 6/8 [00:01<00:00,  5.80it/s]Generating MIDI:  88%|████████▊ | 7/8 [00:01<00:00,  6.11it/s]Generating MIDI: 100%|██████████| 8/8 [00:01<00:00,  5.77it/s]
+
+Instrument Distribution:
+  Acoustic Bass: 39 notes (32.0%)
+    ⚠️  Non-drum instrument detected!
+    Channels: [0]
+    Programs: [32]
+    Pitch range: [47, 87]
+  Program 80: 8 notes (6.6%)
+    ⚠️  Non-drum instrument detected!
+    Channels: [1]
+    Programs: [80]
+    Pitch range: [59, 70]
+  Drums: 75 notes (61.5%)
+
+============================================================
+STEP 2: ANALYZING RAW MODEL OUTPUT
+============================================================
+
+--- Analyzing Raw Model Output ---
+Generating MIDI:   0%|          | 0/8 [00:00<?, ?it/s]Generating MIDI:  12%|█▎        | 1/8 [00:00<00:01,  5.29it/s]Generating MIDI:  25%|██▌       | 2/8 [00:00<00:00,  6.26it/s]Generating MIDI:  38%|███▊      | 3/8 [00:00<00:00,  5.76it/s]Generating MIDI:  50%|█████     | 4/8 [00:00<00:00,  6.30it/s]Generating MIDI:  62%|██████▎   | 5/8 [00:00<00:00,  5.81it/s]Generating MIDI:  75%|███████▌  | 6/8 [00:00<00:00,  6.20it/s]Generating MIDI:  88%|████████▊ | 7/8 [00:01<00:00,  6.42it/s]Generating MIDI: 100%|██████████| 8/8 [00:01<00:00,  6.59it/s]
+Output type: <class 'numpy.ndarray'>
+
+============================================================
+STEP 3: TESTING FILTERING STRATEGIES
+============================================================
+
+1. Original Transcription
+Generating MIDI:   0%|          | 0/8 [00:00<?, ?it/s]Generating MIDI:  12%|█▎        | 1/8 [00:00<00:01,  5.26it/s]Generating MIDI:  25%|██▌       | 2/8 [00:00<00:00,  6.28it/s]Generating MIDI:  38%|███▊      | 3/8 [00:00<00:00,  5.75it/s]Generating MIDI:  50%|█████     | 4/8 [00:00<00:00,  6.27it/s]Generating MIDI:  62%|██████▎   | 5/8 [00:00<00:00,  5.77it/s]Generating MIDI:  75%|███████▌  | 6/8 [00:00<00:00,  6.18it/s]Generating MIDI:  88%|████████▊ | 7/8 [00:01<00:00,  6.43it/s]Generating MIDI: 100%|██████████| 8/8 [00:01<00:00,  6.58it/s]
+
+2. Attempting to filter by confidence/velocity
+
+3. Creating drum-only version
+
+============================================================
+STEP 4: COMPARING WITH OTHER MODELS
+============================================================
+
+============================================================
+COMPARING MODELS
+============================================================
+
+--- Testing mt3_pytorch ---
+Generating MIDI:   0%|          | 0/8 [00:00<?, ?it/s]Generating MIDI:  12%|█▎        | 1/8 [00:00<00:01,  5.30it/s]Generating MIDI:  25%|██▌       | 2/8 [00:00<00:00,  6.29it/s]Generating MIDI:  38%|███▊      | 3/8 [00:00<00:00,  5.76it/s]Generating MIDI:  50%|█████     | 4/8 [00:00<00:00,  6.28it/s]Generating MIDI:  62%|██████▎   | 5/8 [00:00<00:00,  5.77it/s]Generating MIDI:  75%|███████▌  | 6/8 [00:00<00:00,  6.17it/s]Generating MIDI:  88%|████████▊ | 7/8 [00:01<00:00,  6.42it/s]Generating MIDI: 100%|██████████| 8/8 [00:01<00:00,  6.58it/s]
+mt3_pytorch results:
+  Acoustic Bass: 39 notes (32.0%)
+  Program 80: 8 notes (6.6%)
+  Drums: 75 notes (61.5%)
+
+--- Testing mr_mt3 ---
+mr_mt3 results:
+  Drums: 107 notes (100.0%)
+
+--- Testing yourmt3 ---
+Loading YourMT3 model: YPTF.MoE+Multi (noPS)
+Checkpoint: /home/worzpro/Desktop/dev/patched_modules/mt3-infer/.mt3_checkpoints/yourmt3/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/last.ckpt
+Device: cuda
+Loading checkpoint from /home/worzpro/Desktop/dev/patched_modules/mt3-infer/.mt3_checkpoints/yourmt3/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/last.ckpt
+Loaded hyperparameters from checkpoint
+"add_melody_metric_to_singing": True
+"add_pitch_class_metric":       None
+"audio_cfg":                    {'codec': 'spec', 'hop_length': 300, 'audio_backend': 'torchaudio', 'sample_rate': 16000, 'input_frames': 32767, 'n_fft': 2048, 'n_mels': 512, 'f_min': 50.0, 'f_max': 8000.0}
+"base_lr":                      None
+"eval_drum_vocab":              {'Kick Drum': [36, 35], 'Snare Drum': [38, 40], 'Hi-Hat': [42, 44, 46, 22, 26]}
+"eval_subtask_key":             default
+"eval_vocab":                   [None, None, {'Singing Voice': [100, 101]}, None, None, None, None, None, {'Bass': array([32, 33, 34, 35, 36, 37, 38, 39])}, {'Singing Voice': [100, 101]}]
+"init_factor":                  None
+"max_steps":                    None
+"model_cfg":                    {'encoder_type': 'perceiver-tf', 'decoder_type': 'multi-t5', 'pre_encoder_type': 'conv', 'pre_encoder_type_default': {'t5': None, 'perceiver-tf': 'conv', 'conformer': None}, 'pre_decoder_type': 'mc_shared_linear', 'pre_decoder_type_default': {'t5': {'t5': None}, 'perceiver-tf': {'t5': 'linear', 'multi-t5': 'mc_shared_linear'}, 'conformer': {'t5': None}}, 'conv_out_channels': 128, 't5_basename': 'google/t5-v1_1-small', 'pretrained': False, 'use_task_conditional_encoder': True, 'use_task_conditional_decoder': True, 'd_feat': 128, 'tie_word_embeddings': True, 'vocab_size': 596, 'num_max_positions': 1034, 'encoder': {'t5': {'d_model': 512, 'num_heads': 6, 'num_layers': 8, 'dropout_rate': 0.05, 'position_encoding_type': 'sinusoidal', 'ff_widening_factor': 2, 'ff_layer_type': 't5_gmlp'}, 'perceiver-tf': {'num_latents': 26, 'd_latent': 128, 'd_model': 128, 'num_blocks': 3, 'num_local_transformers_per_block': 2, 'num_temporal_transformers_per_block': 2, 'sca_use_query_residual': True, 'dropout_rate': 0.05, 'position_encoding_type': 'rope', 'attention_to_channel': True, 'layer_norm_type': 'layer_norm', 'ff_layer_type': 'moe', 'ff_widening_factor': 4, 'moe_num_experts': 8, 'moe_topk': 2, 'hidden_act': 'silu', 'rotary_type_sca': 'pixel', 'rotary_type_latent': 'pixel', 'rotary_type_temporal': 'lang', 'rotary_apply_to_keys': False, 'rotary_partial_pe': False, 'rope_partial_pe': True, 'num_max_positions': 110, 'vocab_size': 596}, 'conformer': {'d_model': 512, 'intermediate_size': 512, 'num_heads': 8, 'num_layers': 8, 'dropout_rate': 0.1, 'layerdrop': 0.1, 'position_encoding_type': 'rotary', 'conv_dim': (512, 512, 512, 512, 512, 512, 512), 'conv_stride': (5, 2, 2, 2, 2, 2, 2), 'conv_kernel': (10, 3, 3, 3, 3, 3, 3), 'conv_depthwise_kernel_size': 31}}, 'decoder': {'t5': {'d_model': 512, 'num_heads': 6, 'num_layers': 8, 'dropout_rate': 0.05, 'position_encoding_type': 'sinusoidal', 'ff_widening_factor': 2, 'ff_layer_type': 't5_gmlp'}, 'multi-t5': {'d_model': 512, 'num_heads': 6, 'num_layers': 8, 'dropout_rate': 0.05, 'position_encoding_type': 'sinusoidal', 'ff_widening_factor': 2, 'ff_layer_type': 't5_gmlp', 'num_channels': 13, 'num_max_positions': 1034, 'vocab_size': 596}}, 'feat_length': 110, 'event_length': 1024, 'init_factor': 1.0}
+"onset_tolerance":              0.05
+"optimizer_name":               adamwscale
+"pretrained":                   False
+"scheduler_name":               cosine
+"shared_cfg":                   {'PATH': {'data_home': '../../data'}, 'BSZ': {'train_sub': 8, 'train_local': 8, 'validation': 64, 'test': 64}, 'AUGMENTATION': {'train_random_amp_range': [0.8, 1.1], 'train_stem_iaug_prob': 0.7, 'train_stem_xaug_policy': {'max_k': 5, 'tau': 0.3, 'alpha': 1.0, 'max_subunit_stems': 12, 'p_include_singing': None, 'no_instr_overlap': True, 'no_drum_overlap': True, 'uhat_intra_stem_augment': True}, 'train_pitch_shift_range': None}, 'DATAIO': {'num_workers': 4, 'prefetch_factor': 2, 'pin_memory': False, 'persistent_workers': False}, 'CHECKPOINT': {'save_top_k': 4, 'monitor': 'validation/macro_onset_f', 'mode': 'max', 'save_last': True, 'filename': '{epoch}-{step}'}, 'TRAINER': {'limit_train_batches': 1.0, 'limit_val_batches': 1.0, 'limit_test_batches': 1.0, 'gradient_clip_val': 1.0, 'accumulate_grad_batches': 1, 'check_val_every_n_epoch': None, 'num_sanity_val_steps': 0, 'val_check_interval': 20000}, 'WANDB': {'save_dir': '../logs', 'resume': 'allow', 'anonymous': 'allow', 'mode': 'offline'}, 'LR_SCHEDULE': {'warmup_steps': 1000, 'total_steps': 220000, 'final_cosine': 1e-05}, 'TOKENIZER': {'max_shift_steps': 206, 'shift_step_ms': 10}}
+"task_manager":                 <utils.task_manager.TaskManager object at 0x7d1e0803eec0>
+"test_optimal_octave_shift":    False
+"test_pitch_shift_layer":       None
+"weight_decay":                 0.0
+"write_output_dir":             None
+"write_output_vocab":           None
+Loaded model state dict
+Initialized MIDI output vocabulary
+Model loaded successfully on cuda
+Model loaded successfully! (type: YourMT3)
+Running inference on 8 segments...
+Inference result type: <class 'tuple'>
+Got 1 prediction batches
+yourmt3 results:
+  Drums: 106 notes (100.0%)
+
+============================================================
+STEP 5: CREATING VISUALIZATIONS
+============================================================
+
+--- Creating Visualizations ---
+Visualization saved to: instrument_leakage_analysis/spectrogram_with_labels.png
+
+============================================================
+SUMMARY
+============================================================
+
+Results saved to: instrument_leakage_analysis/
+Leakage detected: 38.5% non-drum notes in drum-only audio

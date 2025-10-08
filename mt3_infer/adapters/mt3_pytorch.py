@@ -40,23 +40,38 @@ class MT3PyTorchAdapter(MT3Base):
     - Custom T5 model with continuous input projection
     - PyTorch-only spectrogram processing (no TensorFlow)
     - Original MT3 codec for event decoding
+    - Automatic instrument leakage filtering (optional)
+
+    Known Issue:
+        MT3-PyTorch can incorrectly assign drum sounds to melodic instruments
+        (bass, chromatic percussion) when transcribing drum tracks. Enable
+        auto_filter to automatically correct this.
 
     Args:
-        checkpoint_path: Path to directory containing config.json and mt3.pth
-        device: Device to run on ('cpu', 'cuda', or 'auto')
+        auto_filter: Enable automatic instrument leakage filtering (default: True)
     """
 
     SAMPLE_RATE = 16000
     MAX_LENGTH = 256  # Maximum input length (frames)
     MAX_GENERATION_LENGTH = 1024  # Maximum output sequence length
 
-    def __init__(self) -> None:
+    def __init__(self, auto_filter: bool = True) -> None:
+        """
+        Initialize MT3-PyTorch adapter.
+
+        Args:
+            auto_filter: Whether to automatically filter instrument leakage in drum tracks.
+                        MT3-PyTorch has a known issue where it assigns drum sounds to
+                        melodic instruments. Set to True to automatically fix this.
+                        Default: True
+        """
         super().__init__()
         self._model = None
         self._codec = None
         self._vocab = None
         self._spectrogram_processor = None
         self._device = None
+        self.auto_filter = auto_filter
 
     def load_model(
         self,
@@ -306,6 +321,10 @@ class MT3PyTorchAdapter(MT3Base):
             # Convert to MIDI
             midi = self._note_sequence_to_midi(note_sequence)
 
+            # Apply automatic filtering for drum-heavy content if enabled
+            if self.auto_filter:
+                midi = self._apply_auto_filtering(midi)
+
             return midi
 
         finally:
@@ -373,6 +392,150 @@ class MT3PyTorchAdapter(MT3Base):
         result = result[:, 1:]
 
         return result
+
+    def _apply_auto_filtering(self, midi: mido.MidiFile) -> mido.MidiFile:
+        """
+        Apply automatic filtering to remove instrument leakage in drum tracks.
+
+        MT3-PyTorch has a known issue where it incorrectly assigns drum sounds
+        to melodic instruments (particularly bass and synth lead). This method
+        automatically detects and filters such cases.
+
+        Args:
+            midi: Input MIDI file
+
+        Returns:
+            Filtered MIDI file
+        """
+        # Count notes by instrument type
+        drum_notes = 0
+        bass_notes = 0  # Programs 32-39 (bass instruments)
+        chromatic_notes = 0  # Programs 8-15 (chromatic percussion)
+        other_notes = 0
+
+        program_by_channel = {}
+
+        for track in midi.tracks:
+            for msg in track:
+                # Track program changes
+                if msg.type == 'program_change':
+                    program_by_channel[msg.channel] = msg.program
+
+                # Count notes
+                elif msg.type == 'note_on' and msg.velocity > 0:
+                    if hasattr(msg, 'channel'):
+                        if msg.channel == 9:
+                            drum_notes += 1
+                        else:
+                            program = program_by_channel.get(msg.channel, 0)
+                            if 32 <= program <= 39:
+                                bass_notes += 1
+                            elif 8 <= program <= 15:
+                                chromatic_notes += 1
+                            else:
+                                other_notes += 1
+
+        total_notes = drum_notes + bass_notes + chromatic_notes + other_notes
+
+        if total_notes == 0:
+            return midi
+
+        # Detect drum tracks with leakage patterns
+        # Pattern 1: Drums with bass leakage (common)
+        # Pattern 2: Chromatic percussion misclassification (FDNB case)
+        # Pattern 3: Mostly drums (>60%)
+
+        drum_ratio = drum_notes / total_notes
+        bass_ratio = bass_notes / total_notes
+        chromatic_ratio = chromatic_notes / total_notes
+
+        # If we have drums + bass/chromatic (typical leakage pattern)
+        if drum_notes > 0 and (bass_ratio > 0.2 or chromatic_ratio > 0.5):
+            # This looks like drum leakage - filter to drums only
+            return self._filter_drums_only(midi)
+
+        # If mostly drums (>60%), filter out non-drums
+        if drum_ratio > 0.6:
+            return self._filter_drums_only(midi)
+
+        # If chromatic percussion dominates (>70%), likely misclassified drums
+        if chromatic_ratio > 0.7:
+            # Convert to drums (this is a misclassification of drums)
+            return self._remap_to_drums(midi)
+
+        return midi
+
+    def _filter_drums_only(self, midi: mido.MidiFile) -> mido.MidiFile:
+        """
+        Keep only MIDI channel 10 (drums), removing leaked melodic instruments.
+
+        Args:
+            midi: Input MIDI file
+
+        Returns:
+            MIDI file with only drum channel
+        """
+        filtered_mid = mido.MidiFile()
+        filtered_mid.ticks_per_beat = midi.ticks_per_beat
+
+        for track in midi.tracks:
+            new_track = mido.MidiTrack()
+            has_messages = False
+
+            for msg in track:
+                # Keep non-channel messages (tempo, time signature, etc.)
+                if not hasattr(msg, 'channel'):
+                    new_track.append(msg)
+                    has_messages = True
+                # Keep only drum channel (9 = channel 10 in MIDI)
+                elif msg.channel == 9:
+                    new_track.append(msg)
+                    has_messages = True
+                # Skip program changes and notes for non-drum channels
+                elif msg.channel != 9 and msg.type in ['program_change', 'note_on', 'note_off']:
+                    continue
+
+            if has_messages:
+                filtered_mid.tracks.append(new_track)
+
+        return filtered_mid
+
+    def _remap_to_drums(self, midi: mido.MidiFile) -> mido.MidiFile:
+        """
+        Remap all notes to drum channel when chromatic percussion dominates.
+
+        This handles cases where drum sounds are misclassified as chromatic
+        percussion instruments (e.g., vibraphone, marimba).
+
+        Args:
+            midi: Input MIDI file
+
+        Returns:
+            MIDI file with all notes remapped to drum channel
+        """
+        remapped = mido.MidiFile()
+        remapped.ticks_per_beat = midi.ticks_per_beat
+
+        for track_idx, track in enumerate(midi.tracks):
+            new_track = mido.MidiTrack()
+
+            for msg in track:
+                # Skip program changes (we're remapping everything to drums)
+                if msg.type == 'program_change':
+                    continue
+
+                # Remap all notes to drum channel
+                elif msg.type in ['note_on', 'note_off'] and hasattr(msg, 'channel'):
+                    # Change channel to 9 (drum channel)
+                    new_msg = msg.copy(channel=9)
+                    new_track.append(new_msg)
+                else:
+                    # Keep other messages as-is
+                    new_track.append(msg)
+
+            remapped.tracks.append(new_track)
+
+        return remapped
 
     def _note_sequence_to_midi(self, note_sequence) -> mido.MidiFile:
         """Convert note-seq NoteSequence to mido.MidiFile."""

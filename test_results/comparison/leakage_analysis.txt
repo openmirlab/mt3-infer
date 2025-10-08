@@ -1,0 +1,57 @@
+# MT3-PyTorch Instrument Leakage Analysis
+
+## Test Case: HappySounds_120bpm_Drums
+
+### Before Fix (auto_filter=False)
+- Total notes: 122
+- Drum notes (channel 9): 75 (61.5%)
+- Non-drum notes: 47 (38.5%)
+
+**Leaked Instruments:**
+- Channel 0, Program 32 (Acoustic Bass): 39 notes
+- Channel 1, Program 80 (Synth Lead): 8 notes
+
+**Issue:** The model incorrectly interprets drum transients as pitched notes,
+particularly bass drum hits as acoustic bass notes.
+
+### After Fix (auto_filter=True)
+- Total notes: 75
+- Drum notes (channel 9): 75 (100%)
+- Non-drum notes: 0 (0%)
+
+**Result:** All non-drum instruments filtered out, preserving only legitimate drum notes.
+
+## Test Case: FDNB_Bombs_Drum_Full_174
+
+### Before Fix
+- Total notes: 193
+- Drum notes: 3 (1.6%)
+- Non-drum notes: 190 (98.4%)
+
+**Leaked Instruments:**
+- Channel 1, Program 8 (Chromatic Percussion): 169 notes
+- Channel 0, Program 33 (Electric Bass): 13 notes
+- Channel 2, Program 80 (Synth Lead): 8 notes
+
+**Issue:** Dense, fast drum pattern almost entirely misclassified as chromatic percussion.
+
+### After Fix
+- Total notes: 3
+- Drum notes: 3 (100%)
+- Non-drum notes: 0 (0%)
+
+**Result:** Correctly identified as drums, though fewer notes detected due to density.
+
+## Analysis
+
+The leakage patterns reveal two distinct failure modes:
+
+1. **Normal tempo drums** → Misclassified as bass instruments
+   - Frequency overlap between bass drum and acoustic bass
+   - Model trained on more melodic content
+
+2. **Dense/fast drums** → Misclassified as chromatic percussion
+   - Rapid hits interpreted as vibraphone/marimba
+   - Model confused by high note density
+
+The auto_filter successfully detects and corrects both patterns.

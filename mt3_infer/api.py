@@ -74,7 +74,8 @@ def load_model(
     checkpoint_path: Optional[str] = None,
     device: str = "auto",
     cache: bool = True,
-    auto_download: bool = True
+    auto_download: bool = True,
+    **kwargs
 ) -> MT3Base:
     """
     Load an MT3 model from the registry.
@@ -86,6 +87,9 @@ def load_model(
         device: Device placement ("cuda", "cpu", "auto"). Default is "auto".
         cache: Cache loaded models for reuse. Default is True.
         auto_download: Automatically download checkpoint if missing. Default is True.
+        **kwargs: Additional model-specific parameters:
+                 - auto_filter (bool): For MT3-PyTorch, enable automatic instrument
+                   leakage filtering (default: True)
 
     Returns:
         Initialized MT3 model adapter.
@@ -112,6 +116,9 @@ def load_model(
 
         >>> # Disable auto-download (fail if checkpoint missing)
         >>> model = load_model("mr_mt3", auto_download=False)
+
+        >>> # Disable automatic filtering for MT3-PyTorch
+        >>> model = load_model("mt3_pytorch", auto_filter=False)
     """
     # Resolve model name/alias
     model_name = _resolve_model_name(model)
@@ -227,7 +234,12 @@ def load_model(
     
     # Instantiate and load model
     # Handle adapter-specific initialization parameters
-    adapter = AdapterClass()
+    # Pass kwargs to adapter (e.g., auto_filter for MT3PyTorchAdapter)
+    try:
+        adapter = AdapterClass(**kwargs)
+    except TypeError:
+        # If adapter doesn't accept kwargs, instantiate without them
+        adapter = AdapterClass()
 
     adapter.load_model(checkpoint_path, device=device)
     
@@ -263,7 +275,9 @@ def transcribe(
         checkpoint_path: Override default checkpoint path (optional).
         device: Device placement ("cuda", "cpu", "auto"). Default is "auto".
         auto_download: Automatically download checkpoint if missing. Default is True.
-        **kwargs: Model-specific parameters (reserved for future use).
+        **kwargs: Model-specific parameters:
+                 - auto_filter (bool): For MT3-PyTorch, enable automatic instrument
+                   leakage filtering (default: True)
 
     Returns:
         MIDI file object with transcribed notes.
@@ -295,11 +309,13 @@ def transcribe(
         >>> midi = transcribe(audio, model="mt3_pytorch", device="cuda")
     """
     # Load model (uses cache by default, auto-downloads if needed)
+    # Pass kwargs through (e.g., auto_filter for MT3PyTorchAdapter)
     mt3_model = load_model(
         model=model,
         checkpoint_path=checkpoint_path,
         device=device,
-        auto_download=auto_download
+        auto_download=auto_download,
+        **kwargs
     )
     
     # Transcribe
