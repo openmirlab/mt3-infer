@@ -43,6 +43,7 @@ dependencies = [
     "soxr>=1.0.0",
     "matplotlib>=3.10.6",
     "pyloudnorm>=0.1.1",
+    "pyrubberband>=0.4.0",
 ]
 
 [project.optional-dependencies]

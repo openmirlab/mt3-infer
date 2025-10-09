@@ -276,8 +276,18 @@ def transcribe(
         device: Device placement ("cuda", "cpu", "auto"). Default is "auto".
         auto_download: Automatically download checkpoint if missing. Default is True.
         **kwargs: Model-specific parameters:
-                 - auto_filter (bool): For MT3-PyTorch, enable automatic instrument
-                   leakage filtering (default: True)
+
+                 For MT3-PyTorch:
+                 - auto_filter (bool): Enable automatic instrument leakage filtering
+                   (default: True)
+
+                 For YourMT3 (adaptive preprocessing):
+                 - adaptive (bool): Enable adaptive preprocessing for dense drum patterns
+                   (default: False)
+                 - stretch_factors (List[float]): Time-stretch factors to try
+                 - stretch_method (str): "librosa", "pyrubberband", or "auto"
+                 - num_attempts (int): Number of attempts per configuration
+                 - return_all (bool): Return all results for manual selection
 
     Returns:
         MIDI file object with transcribed notes.
@@ -302,25 +312,35 @@ def transcribe(
         >>> # Use MT3-PyTorch (12x realtime, official)
         >>> midi = transcribe(audio, model="mt3_pytorch")
         >>>
-        >>> # Use YourMT3 (multi-task)
-        >>> midi = transcribe(audio, model="yourmt3")
+        >>> # Use YourMT3 with adaptive preprocessing for dense drums
+        >>> midi = transcribe(
+        ...     audio, model="yourmt3",
+        ...     adaptive=True,
+        ...     num_attempts=3
+        ... )
         >>>
         >>> # Specify device
         >>> midi = transcribe(audio, model="mt3_pytorch", device="cuda")
     """
+    # Separate model initialization kwargs from transcribe kwargs
+    model_init_kwargs = {k: v for k, v in kwargs.items()
+                         if k in ['auto_filter', 'verbose']}
+    transcribe_kwargs = {k: v for k, v in kwargs.items()
+                        if k in ['adaptive', 'stretch_factors', 'stretch_method',
+                                 'num_attempts', 'return_all']}
+
     # Load model (uses cache by default, auto-downloads if needed)
-    # Pass kwargs through (e.g., auto_filter for MT3PyTorchAdapter)
     mt3_model = load_model(
         model=model,
         checkpoint_path=checkpoint_path,
         device=device,
         auto_download=auto_download,
-        **kwargs
+        **model_init_kwargs
     )
-    
-    # Transcribe
-    midi = mt3_model.transcribe(audio, sr=sr)
-    
+
+    # Transcribe with model-specific parameters
+    midi = mt3_model.transcribe(audio, sr=sr, **transcribe_kwargs)
+
     return midi
 
 
