@@ -8,28 +8,30 @@ Complete documentation for the MT3-Infer package.
 
 ### Getting Started
 - [Main README](../README.md) - Installation, quick start, and usage examples
-- [Download Guide](DOWNLOAD.md) - Checkpoint download methods and troubleshooting
+- [Examples](../examples/README.md) - Usage examples and diagnostics
 
-### Integration
-- [Claude Code Guide](../CLAUDE.md) - Development with Claude Code
+### Technical Guides
+- [Preprocessing & Postprocessing](PREPROCESSING_POSTPROCESSING.md) - Custom preprocessing and postprocessing implementations
+  - MT3-PyTorch automatic instrument leakage filtering
+  - YourMT3 adaptive time-stretching for dense patterns
+- [Adaptive Preprocessing](ADAPTIVE_PREPROCESSING.md) - Detailed guide to YourMT3's adaptive mode
+- [Instrument Leakage Investigation](INSTRUMENT_LEAKAGE_INVESTIGATION.md) - MT3-PyTorch auto-filter analysis
+- [Audio Requirements](AUDIO_REQUIREMENTS.md) - Audio format requirements and best practices
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues and solutions
+- [Benchmarks](BENCHMARKS.md) - Performance comparisons across models
 
 ---
 
-## Development Documentation
+## Developer Documentation
 
-All development-related documentation is in the [`dev/`](dev/) directory:
+Developer-focused documentation is in the [`dev/`](dev/) directory:
 
-### Core Development Docs
 - [API Specification](dev/SPEC.md) - Formal API specification
 - [Design Principles](dev/PRINCIPLES.md) - Core design principles (UV, version alignment)
-- [Preprocessing & Postprocessing](dev/PREPROCESSING_POSTPROCESSING.md) - Custom preprocessing and postprocessing implementations
-- [Adaptive Preprocessing](dev/ADAPTIVE_PREPROCESSING.md) - YourMT3 adaptive time-stretching for dense patterns
-- [Instrument Leakage Investigation](dev/INSTRUMENT_LEAKAGE_INVESTIGATION.md) - MT3-PyTorch auto-filter analysis
-- [Audio Requirements](dev/AUDIO_REQUIREMENTS.md) - Audio format requirements
-- [Troubleshooting](dev/TROUBLESHOOTING.md) - Common issues and solutions
-- [Benchmarks](dev/BENCHMARKS.md) - Performance benchmarks
-- [Download Guide](dev/DOWNLOAD.md) - Checkpoint download system
+- [Download System](dev/DOWNLOAD.md) - Checkpoint download internals
 
+### Integration
+- [Claude Code Guide](../CLAUDE.md) - Development with Claude Code
 
 ---
 
@@ -38,16 +40,16 @@ All development-related documentation is in the [`dev/`](dev/) directory:
 ```
 docs/
 ├── README.md                              # This file - documentation index
-└── dev/                                   # Development documentation
-    ├── SPEC.md                           # API specification
-    ├── PRINCIPLES.md                     # Design principles
-    ├── PREPROCESSING_POSTPROCESSING.md   # Custom preprocessing/postprocessing
-    ├── ADAPTIVE_PREPROCESSING.md         # YourMT3 adaptive mode
-    ├── INSTRUMENT_LEAKAGE_INVESTIGATION.md  # MT3-PyTorch auto-filter
-    ├── AUDIO_REQUIREMENTS.md             # Audio format requirements
-    ├── TROUBLESHOOTING.md                # Common issues
-    ├── BENCHMARKS.md                     # Performance benchmarks
-    └── DOWNLOAD.md                       # Download system
+├── PREPROCESSING_POSTPROCESSING.md        # Custom preprocessing/postprocessing
+├── ADAPTIVE_PREPROCESSING.md              # YourMT3 adaptive mode
+├── INSTRUMENT_LEAKAGE_INVESTIGATION.md    # MT3-PyTorch auto-filter
+├── AUDIO_REQUIREMENTS.md                  # Audio format requirements
+├── TROUBLESHOOTING.md                     # Common issues
+├── BENCHMARKS.md                          # Performance benchmarks
+└── dev/                                   # Developer documentation
+    ├── SPEC.md                            # API specification
+    ├── PRINCIPLES.md                      # Design principles
+    └── DOWNLOAD.md                        # Download system internals
 ```
 
 ---
@@ -56,8 +58,8 @@ docs/
 
 When adding new documentation:
 
-- **User guides** → Main README or examples/
-- **Technical documentation** → `docs/dev/`
+- **User guides** → `docs/` (root level)
+- **Developer documentation** → `docs/dev/`
 - **Code examples** → `examples/`
 
 ---
@@ -66,15 +68,16 @@ When adding new documentation:
 
 ### For Users
 - [Quick Start](../README.md#quick-start)
-- [Examples](../examples/README.md)
+- [Preprocessing & Postprocessing Guide](PREPROCESSING_POSTPROCESSING.md)
+- [Audio Requirements](AUDIO_REQUIREMENTS.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
 
-### For Contributors
-- [Development Principles](dev/PRINCIPLES.md)
+### For Developers
 - [API Specification](dev/SPEC.md)
-- [Preprocessing & Postprocessing](dev/PREPROCESSING_POSTPROCESSING.md)
+- [Design Principles](dev/PRINCIPLES.md)
+- [Contributing Guidelines](../CLAUDE.md)
 
 ### Technical Deep Dives
-- [Preprocessing & Postprocessing Customizations](dev/PREPROCESSING_POSTPROCESSING.md) - MT3-PyTorch auto-filter and YourMT3 adaptive mode
-- [Adaptive Preprocessing](dev/ADAPTIVE_PREPROCESSING.md) - YourMT3 time-stretching for dense patterns
-- [Instrument Leakage Investigation](dev/INSTRUMENT_LEAKAGE_INVESTIGATION.md) - MT3-PyTorch auto-filter analysis
-- [Benchmarks](dev/BENCHMARKS.md) - Performance comparisons
+- [MT3-PyTorch Auto-Filter](INSTRUMENT_LEAKAGE_INVESTIGATION.md) - How automatic instrument leakage detection works
+- [YourMT3 Adaptive Mode](ADAPTIVE_PREPROCESSING.md) - Time-stretching strategy for dense patterns
+- [Performance Benchmarks](BENCHMARKS.md) - Speed and accuracy comparisons
