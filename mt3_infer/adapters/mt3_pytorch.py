@@ -12,7 +12,7 @@ Architecture:
 
 Repository: https://github.com/kunato/mt3-pytorch
 License: Apache 2.0 (compatible with mt3-infer MIT license)
-Vendored code location: mt3_infer/vendor/kunato_mt3/
+Model implementation: mt3_infer/models/mt3_pytorch/
 """
 
 import json
@@ -119,15 +119,11 @@ class MT3PyTorchAdapter(MT3Base):
         else:
             self._device = torch.device(device)
 
-        # Add vendored code to path
-        vendor_root = Path(__file__).parent.parent / "vendor" / "kunato_mt3"
-        sys.path.insert(0, str(vendor_root))
-
         try:
-            # Import vendored modules
-            from t5 import T5ForConditionalGeneration, T5Config
-            from contrib import vocabularies, note_sequences, metrics_utils
-            from contrib.spectrograms_torch import SpectrogramProcessor, SpectrogramConfig
+            # Import from models directory
+            from mt3_infer.models.mt3_pytorch.t5 import T5ForConditionalGeneration, T5Config
+            from mt3_infer.models.mt3_pytorch.contrib import vocabularies, note_sequences, metrics_utils
+            from mt3_infer.models.mt3_pytorch.contrib.spectrograms_torch import SpectrogramProcessor, SpectrogramConfig
 
             # Load config
             with open(config_file) as f:
@@ -160,13 +156,9 @@ class MT3PyTorchAdapter(MT3Base):
 
         except ImportError as e:
             raise FrameworkError(
-                f"Failed to import vendored kunato_mt3 modules: {e}\n"
-                "Check that mt3_infer/vendor/kunato_mt3/ exists."
+                f"Failed to import mt3_pytorch modules: {e}\n"
+                "Check that mt3_infer/models/mt3_pytorch/ exists."
             ) from e
-        finally:
-            # Cleanup sys.path
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
 
     def preprocess(self, audio: np.ndarray, sr: int = 16000) -> np.ndarray:
         """
@@ -281,12 +273,8 @@ class MT3PyTorchAdapter(MT3Base):
         if not self._model_loaded:
             raise RuntimeError("Model not loaded. Call load_model() first.")
 
-        # Add vendored code to path for decoding
-        vendor_root = Path(__file__).parent.parent / "vendor" / "kunato_mt3"
-        sys.path.insert(0, str(vendor_root))
-
         try:
-            from contrib import vocabularies, metrics_utils
+            from mt3_infer.models.mt3_pytorch.contrib import vocabularies, metrics_utils
             import note_seq
 
             # Convert tokens to predictions format
@@ -327,10 +315,8 @@ class MT3PyTorchAdapter(MT3Base):
 
             return midi
 
-        finally:
-            # Cleanup sys.path
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
+        except ImportError as e:
+            raise FrameworkError(f"Failed to import mt3_pytorch modules: {e}") from e
 
     def _audio_to_frames(self, audio: np.ndarray):
         """Split audio into frames."""
@@ -539,29 +525,19 @@ class MT3PyTorchAdapter(MT3Base):
 
     def _note_sequence_to_midi(self, note_sequence) -> mido.MidiFile:
         """Convert note-seq NoteSequence to mido.MidiFile."""
-        # Add vendored code to path
-        vendor_root = Path(__file__).parent.parent / "vendor" / "kunato_mt3"
-        sys.path.insert(0, str(vendor_root))
+        import note_seq
+        import tempfile
 
-        try:
-            import note_seq
-            import tempfile
+        # Write to temporary MIDI file
+        with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as tmp:
+            tmp_path = tmp.name
 
-            # Write to temporary MIDI file
-            with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as tmp:
-                tmp_path = tmp.name
+        note_seq.sequence_proto_to_midi_file(note_sequence, tmp_path)
 
-            note_seq.sequence_proto_to_midi_file(note_sequence, tmp_path)
+        # Load with mido
+        midi = mido.MidiFile(tmp_path)
 
-            # Load with mido
-            midi = mido.MidiFile(tmp_path)
+        # Clean up
+        Path(tmp_path).unlink()
 
-            # Clean up
-            Path(tmp_path).unlink()
-
-            return midi
-
-        finally:
-            # Cleanup sys.path
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
+        return midi

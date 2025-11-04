@@ -22,17 +22,12 @@ All notable changes to MT3-Infer will be documented in this file.
 - Default behavior provides clean drum transcriptions out of the box
 
 ### Documentation
-- Added `docs/INSTRUMENT_LEAKAGE_INVESTIGATION.md` - Complete investigation report
-- Added `docs/MT3_PYTORCH_AUTO_FILTER.md` - Usage guide for the new parameter
-- Updated `docs/MT3_PYTORCH_INSTRUMENT_LEAKAGE.md` - Technical analysis
+- Added `docs/dev/INSTRUMENT_LEAKAGE_INVESTIGATION.md` - Complete investigation report
 - Updated `README.md` with What's New section and auto_filter information
 - Updated `CLAUDE.md` with latest project status and MT3-PyTorch filtering details
-- Updated `docs/TROUBLESHOOTING.md` with instrument leakage section
-- Created `investigation_archive/README.md` for archived test scripts
+- Updated `docs/dev/TROUBLESHOOTING.md` with instrument leakage section
 
 ### Development
-- Archived investigation scripts to `investigation_archive/`
-- Cleaned up test outputs and temporary files
 - Maintained backward compatibility - existing code continues to work
 
 ## [0.1.0] - 2024-10-01

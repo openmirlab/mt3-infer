@@ -135,11 +135,8 @@ class YourMT3Adapter(MT3Base):
         """
         import sys
 
-        vendor_root = Path(__file__).parent.parent / "vendor" / "yourmt3"
-        sys.path.insert(0, str(vendor_root))
-
         try:
-            from inference_loader import load_model_for_inference
+            from mt3_infer.models.yourmt3.inference_loader import load_model_for_inference
 
             # Determine checkpoint path
             if checkpoint_path is None:
@@ -209,10 +206,6 @@ class YourMT3Adapter(MT3Base):
             self.model = None  # Reset on error
             self._model_loaded = False
             raise CheckpointError(f"Failed to load YourMT3 checkpoint: {e}") from e
-        finally:
-            # Always remove vendor path from sys.path after loading
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
 
     @torch.inference_mode()
     def preprocess(
@@ -236,15 +229,7 @@ class YourMT3Adapter(MT3Base):
         import sys
 
         import torchaudio
-
-        # Temporarily add vendor path for imports
-        vendor_root = Path(__file__).parent.parent / "vendor" / "yourmt3"
-        sys.path.insert(0, str(vendor_root))
-        try:
-            from utils.audio import slice_padded_array
-        finally:
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
+        from mt3_infer.models.yourmt3.utils.audio import slice_padded_array
 
         # Convert to torch tensor
         audio_tensor = torch.from_numpy(audio.astype('float32')).unsqueeze(0)  # (1, n_samples)
@@ -318,17 +303,9 @@ class YourMT3Adapter(MT3Base):
         import sys
         import tempfile
         from collections import Counter
-
-        # Temporarily add vendor path for imports
-        vendor_root = Path(__file__).parent.parent / "vendor" / "yourmt3"
-        sys.path.insert(0, str(vendor_root))
-        try:
-            from utils.event2note import merge_zipped_note_events_and_ties_to_notes
-            from utils.note2event import mix_notes
-            from utils.utils import write_model_output_as_midi
-        finally:
-            if str(vendor_root) in sys.path:
-                sys.path.remove(str(vendor_root))
+        from mt3_infer.models.yourmt3.utils.event2note import merge_zipped_note_events_and_ties_to_notes
+        from mt3_infer.models.yourmt3.utils.note2event import mix_notes
+        from mt3_infer.models.yourmt3.utils.utils import write_model_output_as_midi
 
         pred_token_arr = outputs
 

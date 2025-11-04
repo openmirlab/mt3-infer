@@ -38,8 +38,8 @@ from mt3_infer.exceptions import CheckpointError, AudioError, InferenceError
 from mt3_infer.adapters import vocab_utils  # Proper codec-based decoding
 
 def _import_t5_model():
-    """Import MR-MT3's custom T5 model from vendored code."""
-    from mt3_infer.vendor.mr_mt3.t5 import T5ForConditionalGeneration
+    """Import MR-MT3's custom T5 model."""
+    from mt3_infer.models.mr_mt3.t5 import T5ForConditionalGeneration
     return T5ForConditionalGeneration
 
 

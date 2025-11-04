@@ -555,6 +555,15 @@ wheels = [
 ]
 
 [[package]]
+name = "importlib-resources"
+version = "6.5.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/8c/f834fbf984f691b4f7ff60f50b514cc3de5cc08abfc3295564dd89c5e2e7/importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c", size = 44693, upload-time = "2025-01-03T18:51:56.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/ed/1f1afb2e9e7f38a545d628f864d562a5ae64fe6f7a10e28ffb9b185b4e89/importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec", size = 37461, upload-time = "2025-01-03T18:51:54.306Z" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -962,6 +971,12 @@ torch = [
     { name = "torchvision" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
@@ -974,8 +989,8 @@ requires-dist = [
     { name = "mir-eval", specifier = ">=0.8.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "note-seq", specifier = "==0.0.3" },
-    { name = "numpy", specifier = ">=1.22,<2.0" },
-    { name = "pretty-midi", specifier = ">=0.2.9" },
+    { name = "numpy", specifier = ">=1.22" },
+    { name = "pretty-midi", specifier = ">=0.2.10" },
     { name = "protobuf", specifier = ">=3.20.3,<4.0" },
     { name = "pyloudnorm", specifier = ">=0.1.1" },
     { name = "pyrubberband", specifier = ">=0.4.0" },
@@ -1003,6 +1018,12 @@ requires-dist = [
     { name = "wandb", specifier = ">=0.22.1" },
 ]
 provides-extras = ["torch", "tensorflow", "all", "dev", "synthesis"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+]
 
 [[package]]
 name = "multidict"
@@ -1433,14 +1454,15 @@ wheels = [
 
 [[package]]
 name = "pretty-midi"
-version = "0.2.9"
+version = "0.2.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "importlib-resources" },
     { name = "mido" },
     { name = "numpy" },
     { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/8e/63c6e39a7a64623a9cd6aec530070c70827f6f8f40deec938f323d7b1e15/pretty_midi-0.2.9.tar.gz", hash = "sha256:f6a249cb843441e1cb78c4c0a1290948d6f56df7486f7974e20d5c80486dc99e", size = 5591582, upload-time = "2020-04-09T19:19:20.628Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/4f/5b18643f947ca2a97e25c3615740e4ead2b833fcd0b1d5d4262ea688519d/pretty_midi-0.2.11.tar.gz", hash = "sha256:dda81d643f71a0e91843a8644b312c0380237f1e63d5c6188225785c8d58cc67", size = 5600984, upload-time = "2025-10-08T18:57:50.288Z" }
 
 [[package]]
 name = "prompt-toolkit"
