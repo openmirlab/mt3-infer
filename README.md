@@ -21,7 +21,7 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 - ✅ **Production Ready**: Clean, tested, ~8MB package size
 - ✅ **Auto-Download**: Automatic checkpoint downloads on first use
 - ✅ **4 Download Methods**: Auto, Python API, CLI, standalone script
-- ✅ **3 Models**: MR-MT3 (fast), MT3-PyTorch (accurate), YourMT3 (multitask)
+- ✅ **3 Models**: MR-MT3, MT3-PyTorch, YourMT3
 - ✅ **Framework Isolated**: Clean PyTorch/TensorFlow/JAX separation
 - ✅ **CLI Tool**: `mt3-infer` command-line interface
 - ✅ **Reproducible**: Pinned dependencies, verified checkpoints
@@ -53,14 +53,14 @@ midi.save("output.mid")
 ### Model Selection
 
 ```python
-# Use fastest model (57x real-time)
-midi = transcribe(audio, model="fast")
+# Use MR-MT3 model (57x real-time)
+midi = transcribe(audio, model="mr_mt3")
 
-# Use most accurate model (147 notes detected)
-midi = transcribe(audio, model="accurate")
+# Use MT3-PyTorch model (147 notes detected)
+midi = transcribe(audio, model="mt3_pytorch")
 
-# Use multitask model
-midi = transcribe(audio, model="multitask")
+# Use YourMT3 model (multi-stem separation)
+midi = transcribe(audio, model="yourmt3")
 ```
 
 ### Download Checkpoints
@@ -76,7 +76,7 @@ mt3-infer download mr_mt3 mt3_pytorch
 mt3-infer list
 
 # Transcribe audio via CLI
-mt3-infer transcribe input.wav -o output.mid -m fast
+mt3-infer transcribe input.wav -o output.mid -m mr_mt3
 ```
 
 > **Heads up:** The downloader now pulls MR-MT3 weights directly from
@@ -103,15 +103,15 @@ When the variable is set, both the Python API and CLI (including `mt3-infer down
 
 ## Supported Models
 
-| Model | Alias | Framework | Speed | Accuracy | Size | Best For |
-|-------|-------|-----------|-------|----------|------|----------|
-| **MR-MT3** | `fast` | PyTorch | **57x real-time** | 116 notes | 176 MB | Speed-critical apps |
-| **MT3-PyTorch** | `accurate`, `default` | PyTorch | 12x real-time | **147 notes** | 176 MB | General use, accuracy* |
-| **YourMT3** | `multitask` | PyTorch + Lightning | ~15x real-time | 118 notes | 536 MB | Multi-stem separation |
+| Model | Framework | Speed | Notes Detected | Size | Features |
+|-------|-----------|-------|----------------|------|----------|
+| **MR-MT3** | PyTorch | 57x real-time | 116 notes | 176 MB | Optimized for speed |
+| **MT3-PyTorch** | PyTorch | 12x real-time | 147 notes | 176 MB | Official architecture with auto-filtering* |
+| **YourMT3** | PyTorch + Lightning | ~15x real-time | 118 notes | 536 MB | 8-stem separation, Perceiver-TF + MoE |
 
 *MT3-PyTorch includes automatic instrument leakage filtering (configurable via `auto_filter` parameter)
 
-*Tested on NVIDIA RTX 4090 with PyTorch 2.7.1 + CUDA 12.6*
+*Performance benchmarks from NVIDIA RTX 4090 with PyTorch 2.7.1 + CUDA 12.6*
 
 > Default `yourmt3` downloads the `YPTF.MoE+Multi (noPS)` checkpoint, matching the original YourMT3 Space output.
 
@@ -140,7 +140,7 @@ for name, info in models.items():
     print(f"{name}: {info['description']}")
 
 # Get model details
-info = get_model_info("fast")
+info = get_model_info("mr_mt3")
 print(f"Speed: {info['metadata']['performance']['speed_x_realtime']}x real-time")
 ```
 
@@ -266,7 +266,7 @@ mt3-infer list
 
 # Transcribe audio
 mt3-infer transcribe input.wav -o output.mid
-mt3-infer transcribe input.wav -m fast      # Use fast model
+mt3-infer transcribe input.wav -m mr_mt3    # Use MR-MT3 model
 mt3-infer transcribe input.wav --device cuda # Use GPU
 
 # Show help
@@ -305,7 +305,7 @@ Batch download without installing package:
 python tools/download_all_checkpoints.py
 ```
 
-See [docs/DOWNLOAD.md](docs/DOWNLOAD.md) for detailed download guide.
+See the CLI section above for detailed download instructions.
 
 ---
 
@@ -335,7 +335,7 @@ See [docs/DOWNLOAD.md](docs/DOWNLOAD.md) for detailed download guide.
 - **v0.3.0** (Planned): ONNX export, streaming inference
 - **v1.0.0** (Planned): Full test coverage, PyPI release
 
-**Note:** Magenta MT3 (JAX/Flax) has been excluded due to dependency conflicts with the PyTorch ecosystem. The current 3 models (MR-MT3, MT3-PyTorch, YourMT3) provide comprehensive coverage for speed, accuracy, and multi-stem use cases.
+**Note:** Magenta MT3 (JAX/Flax) has been excluded due to dependency conflicts with the PyTorch ecosystem. The current 3 models (MR-MT3, MT3-PyTorch, YourMT3) provide comprehensive coverage for various transcription scenarios.
 
 ---
 
@@ -349,9 +349,9 @@ mt3_infer/
 ├── cli.py               # CLI tool
 ├── exceptions.py        # Custom exceptions
 ├── adapters/            # Model-specific implementations
-│   ├── mr_mt3.py        # MR-MT3 (PyTorch)
-│   ├── mt3_pytorch.py   # MT3-PyTorch (Magenta weights)
-│   ├── yourmt3.py       # YourMT3 (PyTorch + Lightning)
+│   ├── mr_mt3.py        # MR-MT3 adapter
+│   ├── mt3_pytorch.py   # MT3-PyTorch adapter
+│   ├── yourmt3.py       # YourMT3 adapter
 │   └── vocab_utils.py   # Shared MIDI decoding
 ├── config/
 │   └── checkpoints.yaml # Model registry & download config
@@ -360,10 +360,10 @@ mt3_infer/
 │   ├── midi.py          # MIDI postprocessing
 │   ├── download.py      # Checkpoint download system
 │   └── framework.py     # Version checks
-├── vendor/              # Vendored dependencies (self-contained)
-│   ├── kunato_mt3/      # MT3-PyTorch model code
-│   └── yourmt3/         # YourMT3 model code
-└── tests/               # Test suite
+└── models/              # Model implementations
+    ├── mr_mt3/          # MR-MT3 model code
+    ├── mt3_pytorch/     # MT3-PyTorch model code
+    └── yourmt3/         # YourMT3 model code
 ```
 
 ---
@@ -372,20 +372,15 @@ mt3_infer/
 
 ### For Users
 - **[Main README](README.md)** - This file
-- **[Download Guide](docs/DOWNLOAD.md)** - Checkpoint download methods
 - **[Examples](examples/)** - Usage examples
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Benchmarks](docs/BENCHMARKS.md)** - Performance benchmarks
 
 ### For Developers
 - **[Documentation Index](docs/README.md)** - Complete docs navigation
-- **[Claude Code Guide](CLAUDE.md)** - Development with Claude Code
 - **[API Specification](docs/dev/SPEC.md)** - Formal API spec
-- **[Development Plan](docs/dev/PLAN.md)** - Implementation roadmap
 - **[Design Principles](docs/dev/PRINCIPLES.md)** - Development guidelines
-
-### Technical Reports
-- **[Model Comparison](docs/dev/reports/MODEL_COMPARISON.md)** - Performance comparison
-- **[GPU Performance](docs/dev/reports/GPU_PERFORMANCE.md)** - GPU benchmarks
-- **[CPU Analysis](docs/dev/reports/CPU_SPEED_ANALYSIS.md)** - CPU performance
+- **[Download Guide](docs/dev/DOWNLOAD.md)** - Internal download documentation
 
 ---
 
@@ -416,16 +411,16 @@ uv run mypy mt3_infer/
 This project uses [UV](https://github.com/astral-sh/uv) for dependency management. Always use `uv run`:
 
 ```bash
-# ✅ Correct
+# Correct
 uv run python script.py
 uv run pytest
 
-# ❌ Incorrect
+# Incorrect
 python script.py
 pytest
 ```
 
-See [docs/dev/PRINCIPLES.md](docs/dev/PRINCIPLES.md) for details.
+See docs/dev/PRINCIPLES.md for development guidelines.
 
 ---
 
@@ -477,8 +472,8 @@ See [mt3_infer/config/checkpoints.yaml](mt3_infer/config/checkpoints.yaml) for f
 
 We welcome contributions! Please:
 
-1. Read [docs/dev/SPEC.md](docs/dev/SPEC.md) for API specifications
-2. Follow [docs/dev/PRINCIPLES.md](docs/dev/PRINCIPLES.md) for development guidelines
+1. Read docs/dev/SPEC.md for API specifications
+2. Follow docs/dev/PRINCIPLES.md for development guidelines
 3. Submit PRs with tests and documentation
 
 ---
@@ -502,8 +497,8 @@ If you use MT3-Infer in your research, please cite the original MT3 papers:
 
 For issues and questions:
 - **GitHub Issues**: [github.com/worzpro/mt3-infer/issues](https://github.com/worzpro/mt3-infer/issues)
-- **Documentation**: [docs/](docs/)
-- **Examples**: [examples/](examples/)
+- **Documentation**: docs/
+- **Examples**: examples/
 
 ---
 
