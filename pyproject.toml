@@ -3,7 +3,7 @@ name = "mt3-infer"
 version = "0.1.0"
 description = "Unified, inference-only toolkit for MT3 model family (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [
     { name = "MT3-Infer Contributors" }
@@ -155,7 +155,7 @@ exclude_lines = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = [
