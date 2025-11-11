@@ -178,7 +178,7 @@ def slice_padded_array_for_subbatch(x: np.ndarray,
 def pitch_shift_audio(src_audio_file: os.PathLike,
                       min_pitch_shift: int = -5,
                       max_pitch_shift: int = 6,
-                      random_microshift_range: tuple[int, int] = (-10, 11)):
+                      random_microshift_range: Tuple[int, int] = (-10, 11)):
     """
     Pitch shift audio file using the Sox command-line tool.
 

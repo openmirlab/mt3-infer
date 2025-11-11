@@ -85,7 +85,7 @@ class YourMT3Adapter(MT3Base):
         self.verbose = verbose
         self._set_model_key(model_key)
 
-    def _set_model_key(self, model_key: str | None) -> None:
+    def _set_model_key(self, model_key: Optional[str]) -> None:
         resolved_key = model_key or "yptf_moe_nops"
         if resolved_key not in CHECKPOINT_CONFIGS:
             available = ", ".join(CHECKPOINT_CONFIGS.keys())
@@ -96,7 +96,7 @@ class YourMT3Adapter(MT3Base):
         self.model_key = resolved_key
         self.config = CHECKPOINT_CONFIGS[resolved_key]
 
-    def _checkpoint_components(self, key: str) -> tuple[str, str]:
+    def _checkpoint_components(self, key: str) -> Tuple[str, str]:
         checkpoint_spec = CHECKPOINT_CONFIGS[key]["checkpoint"]
         if "@" in checkpoint_spec:
             return tuple(checkpoint_spec.split("@", 1))  # (directory, filename)

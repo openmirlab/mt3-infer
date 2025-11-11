@@ -4,7 +4,7 @@
 
 MT3-Infer provides a clean, framework-neutral API for running music transcription inference across multiple MT3 implementations with a single consistent interface.
 
-[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.7.1-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -221,7 +221,7 @@ pip install mt3-infer
 
 ```bash
 # Clone repository
-git clone https://github.com/worzpro/mt3-infer.git
+git clone https://github.com/openmirlab/mt3-infer.git
 cd mt3-infer
 
 # Install with UV (recommended)
@@ -431,7 +431,7 @@ To use mt3-infer in the worzpro-demo project:
 ```toml
 # In worzpro-demo/pyproject.toml
 [tool.uv.sources]
-mt3-infer = { path = "../patched_modules/mt3-infer", extras = ["torch"] }
+mt3-infer = { git = "https://github.com/openmirlab/mt3-infer", extras = ["torch"] }
 ```
 
 Then in Python:
@@ -496,7 +496,7 @@ If you use MT3-Infer in your research, please cite the original MT3 papers:
 ## Support
 
 For issues and questions:
-- **GitHub Issues**: [github.com/worzpro/mt3-infer/issues](https://github.com/worzpro/mt3-infer/issues)
+- **GitHub Issues**: [github.com/openmirlab/mt3-infer/issues](https://github.com/openmirlab/mt3-infer/issues)
 - **Documentation**: docs/
 - **Examples**: examples/
 
