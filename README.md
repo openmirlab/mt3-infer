@@ -7,6 +7,7 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.7.1-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/mt3-infer)](https://pypi.org/project/mt3-infer/)
 
 ---
 
@@ -31,6 +32,8 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 ## Quick Start
 
 ### Installation
+
+MT3-Infer is available on [PyPI](https://pypi.org/project/mt3-infer/).
 
 ```bash
 # Using pip
