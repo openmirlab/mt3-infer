@@ -2,7 +2,7 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
-## [0.2.0] - 2024-10-08
+## [0.2.0] - 2025-11-14
 
 ### Added
 - **Automatic instrument leakage filtering for MT3-PyTorch**
@@ -30,7 +30,7 @@ All notable changes to MT3-Infer will be documented in this file.
 ### Development
 - Maintained backward compatibility - existing code continues to work
 
-## [0.1.0] - 2024-10-01
+## [0.1.0] - 2025-11-14
 
 ### Initial Release
 - Three production-ready models: MR-MT3, MT3-PyTorch, YourMT3

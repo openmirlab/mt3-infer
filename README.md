@@ -12,8 +12,7 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 
 ## 🎉 What's New
 
-- **v0.2.0** (Latest): Fixed MT3-PyTorch instrument leakage with automatic filtering (`auto_filter` parameter)
-- **v0.1.0**: Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
+- **v0.1.0** (Latest): Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
 
 ## Features
 
@@ -333,7 +332,7 @@ See the CLI section above for detailed download instructions.
 ### 🚧 Roadmap
 - **v0.2.0** (Planned): Batch processing, additional optimizations
 - **v0.3.0** (Planned): ONNX export, streaming inference
-- **v1.0.0** (Planned): Full test coverage, PyPI release
+- **v1.0.0** (Planned): Full test coverage, additional features
 
 **Note:** Magenta MT3 (JAX/Flax) has been excluded due to dependency conflicts with the PyTorch ecosystem. The current 3 models (MR-MT3, MT3-PyTorch, YourMT3) provide comprehensive coverage for various transcription scenarios.
 
