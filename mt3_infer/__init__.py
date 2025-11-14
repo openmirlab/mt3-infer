@@ -5,7 +5,7 @@ This package provides a clean, framework-neutral API for running music transcrip
 inference across multiple MT3 implementations (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from mt3_infer.base import MT3Base
 from mt3_infer.exceptions import (

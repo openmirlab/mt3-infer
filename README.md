@@ -12,7 +12,8 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 
 ## 🎉 What's New
 
-- **v0.1.0** (Latest): Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
+- **v0.1.1** (Latest): Fixed YAML config files inclusion in package distribution
+- **v0.1.0**: Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
 
 ## Features
 

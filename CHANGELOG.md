@@ -2,7 +2,14 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
-## [0.2.0] - 2025-11-14
+## [0.1.1] - 2025-11-14
+
+### Fixed
+- **Package distribution**: YAML configuration files (`checkpoints.yaml`, `external_integrations.yaml`) are now properly included in the built package
+  - Fixed `FileNotFoundError` when calling `list_models()` or `get_model_info()` on installed packages
+  - Updated `pyproject.toml` to explicitly include `mt3_infer/**/*.yaml` and `mt3_infer/**/*.yml` in build
+
+## [0.2.0] - Planned
 
 ### Added
 - **Automatic instrument leakage filtering for MT3-PyTorch**
