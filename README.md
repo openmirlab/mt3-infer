@@ -504,5 +504,3 @@ For issues and questions:
 - **Examples**: examples/
 
 ---
-
-**Built for the worzpro-demo ecosystem** | **Powered by PyTorch**
