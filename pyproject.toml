@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 
 # Core dependencies (framework-agnostic)
@@ -121,7 +122,7 @@ include = [
     "mt3_infer/**/*.py",
     "mt3_infer/**/*.yaml",
     "mt3_infer/**/*.yml",
-    "refs/**/*",
+    "mt3_infer/py.typed",
 ]
 
 [tool.pytest.ini_options]
@@ -200,9 +201,3 @@ ignore_missing_imports = true
 [tool.black]
 line-length = 100
 target-version = ["py38"]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
-]
