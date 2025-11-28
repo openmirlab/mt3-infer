@@ -178,14 +178,7 @@ shared_cfg = {
         "check_val_every_n_epoch": 1, #5, 1 for very large dataset such as EGMD
         "num_sanity_val_steps": 0,
     },
-    "WANDB": {
-        # "save_dir": "../logs",
-        "save_dir": "amt/logs", # modified for huggingface spaces...
-        "cache_dir": "../logs/.wandb_cache",
-        "resume": "allow",
-        "anonymous": "allow", # {never, allow, must}
-        "mode": "online", # {online, offline, disabled}
-    },
+    # Removed WANDB config - not needed for inference-only usage
     "LR_SCHEDULE": {
         # "scheduler_type": "cosine", # {legacy, cosine, constant}
         "warmup_steps": 1000, # only for cosine scheduler, legacy scheduler follows T5's legacy schedule
