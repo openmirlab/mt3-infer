@@ -2,10 +2,7 @@
 import numpy as np
 import torch
 
-if torch.cuda.is_available():
-    TEST_BSZ = 128
-else:
-    TEST_BSZ = 16
+# Removed TEST_BSZ - batch size configs removed (training-only)
 # yapf: disable
 """
 audio_cfg:
@@ -130,61 +127,14 @@ model_cfg = {
 }
 
 # yapf: enable
+# Minimal shared_cfg for inference-only usage
+# Removed all training-related configs: BSZ, AUGMENTATION, DATAIO, CHECKPOINT, TRAINER, WANDB, LR_SCHEDULE
 shared_cfg = {
+    # PATH kept for backward compatibility (used by eval datasets, but not core inference)
     "PATH": {
         "data_home": "../../data", # path to the data directory. If using relative path, it is relative to /src directory.
     },
-    "BSZ": { # global batch size is local_bsz * n_GPUs in DDP mode
-        "train_sub": 12, #20, # sub-batch size is per CPU worker
-        "train_local": 24, #40, # local batch size is per GPU in DDP mode
-        "validation": 64, # validation batch size is per GPU in DDP mode
-        "test": TEST_BSZ,
-    },
-    "AUGMENTATION": {
-        "train_random_amp_range": [0.8, 1.1], # min and max amplitude scaling factor
-        "train_stem_iaug_prob": 0.7, # probability of stem activation in intra-stem augmentation
-        "train_stem_xaug_policy": {
-            "max_k": 3,
-            "tau": 0.3,
-            "alpha": 1.0,
-            "max_subunit_stems": 12, # the number of subunit stems to be reduced to this number of stems
-            "p_include_singing": None,  # NOT IMPLEMENTED; probability of including singing for cross augmented examples. if None, use base probaility.
-            "no_instr_overlap": True,
-            "no_drum_overlap": True,
-            "uhat_intra_stem_augment": True,
-        },
-        "train_pitch_shift_range": [-2, 2], # [min, max] in semitones. None or [0, 0] for no pitch shift.
-    },
-    "DATAIO": { # do not set `shuffle` here. 
-        "num_workers": 4, # num_worker is per GPU in DDP mode
-        "prefetch_factor": 2, #2,
-        "pin_memory": True,
-        "persistent_workers": False,
-    },
-    "CHECKPOINT": {
-        "save_top_k": 4, # max top k checkpoints to save
-        "monitor": 'validation/macro_onset_f',
-        "mode": 'max',
-        # "every_n_epochs": 20, # only working when check_val_every_n_epoch is 0
-        "save_last": True, # save last model
-        "filename": "{epoch}-{step}",
-    },
-    "TRAINER": { # do not coverwrite args in this section
-        "limit_train_batches": 1.0, # How much of training dataset to check (float = fraction, int = num_batches)
-        "limit_val_batches": 1.0,
-        "limit_test_batches": 1.0,
-        "gradient_clip_val": 1.0, # {0 or None} means don't clip.
-        "accumulate_grad_batches": 1, #1, # Accumulates grads every k batches. If set to 1, no effect.
-        "check_val_every_n_epoch": 1, #5, 1 for very large dataset such as EGMD
-        "num_sanity_val_steps": 0,
-    },
-    # Removed WANDB config - not needed for inference-only usage
-    "LR_SCHEDULE": {
-        # "scheduler_type": "cosine", # {legacy, cosine, constant}
-        "warmup_steps": 1000, # only for cosine scheduler, legacy scheduler follows T5's legacy schedule
-        "total_steps": 100000, # argparser of train.py can overwrite this
-        "final_cosine": 1e-5, # only for cosine scheduler
-    },
+    # TOKENIZER config kept (optional, tokenizers have defaults)
     "TOKENIZER": {
         "max_shift_steps": "auto", # max number of shift steps in the model. (int) or "auto". If "auto", it is set by audio_cfg["input_frames"] and shift_steps_ms. 206 with default setup.
         "shift_step_ms": 10, # shift step in ms
@@ -243,30 +193,4 @@ T5_BASE_CFG = {
 }
 
 # yapf: enable
-DEEPSPEED_CFG = {
-    "zero_allow_untested_optimizer": True,
-    "optimizer": {
-        "type": "adam",
-        "params": {
-            "lr": 1e-4,
-            "betas": [0.998, 0.999],
-            "eps": 1e-3,
-            "weight_decay": 0.001,
-            "adam_w_mode": True,
-        }
-    },
-    "scheduler": {
-        "type": "WarmupLR",
-        "params": {
-            "last_batch_iteration": -1,
-            "warmup_min_lr": 0,
-            "warmup_max_lr": 3e-5,
-            "warmup_num_steps": 100,
-        },
-    },
-    "zero_optimization": {
-        "stage": 0,  #0,1,2,3
-        # "offload_optimizer":
-        #     False,  # Enable Offloading optimizer state/calculation to the host CPU
-    },
-}
+# Removed DEEPSPEED_CFG - DeepSpeed is training-only, not needed for inference
