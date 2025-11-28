@@ -2,6 +2,22 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
+## [0.1.2] - 2025-01-XX
+
+### Removed
+- **Training-related code**: Removed all training code to make mt3-infer a pure inference-only library
+  - Removed `wandb` dependency requirement (was already commented out)
+  - Removed training methods from YourMT3 (`training_step`, `validation_step`, `test_step`, `configure_optimizers`, etc.)
+  - Removed training-specific files: `init_train.py`, `model_helper.py`, `optimizers.py`, `lr_scheduler.py`, `datasets_train.py`, `augment.py`, `data_modules.py`
+  - Removed unused `T5Adversarial` class from MR-MT3 (adversarial training code)
+  - Cleaned up training-related parameters from YourMT3 `__init__` method
+
+### Verified
+- **MR-MT3 and MT3-PyTorch**: Confirmed both adapters are already inference-only with no training dependencies
+  - Both models set to `.eval()` mode
+  - No Lightning modules or training methods
+  - No optimizers or schedulers
+
 ## [0.1.1] - 2025-11-14
 
 ### Fixed

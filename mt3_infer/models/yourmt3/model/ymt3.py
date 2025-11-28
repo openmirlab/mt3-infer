@@ -18,7 +18,6 @@ from torch.nn import CrossEntropyLoss
 import torchaudio  # for debugging audio
 import pytorch_lightning as pl
 import numpy as np
-import wandb
 from einops import rearrange
 
 from transformers import T5Config
@@ -34,14 +33,13 @@ from mt3_infer.models.yourmt3.model.spectrogram import get_spectrogram_layer_fro
 from mt3_infer.models.yourmt3.model.conv_block import PreEncoderBlockRes3B
 from mt3_infer.models.yourmt3.model.conv_block import PreEncoderBlockHFTT, PreEncoderBlockRes3BHFTT  # added for hFTT-like pre-encoder
 from mt3_infer.models.yourmt3.model.projection_layer import get_projection_layer, get_multi_channel_projection_layer
-# from model.optimizers import get_optimizer  # DISABLED for inference-only (causes protobuf conflicts)
-# from model.lr_scheduler import get_lr_scheduler  # DISABLED for inference-only
+# Removed optimizers and lr_scheduler imports - training-only, not needed for inference
 
 from mt3_infer.models.yourmt3.utils.note_event_dataclasses import Note
 from mt3_infer.models.yourmt3.utils.note2event import mix_notes
 from mt3_infer.models.yourmt3.utils.event2note import merge_zipped_note_events_and_ties_to_notes, DECODING_ERR_TYPES
 from mt3_infer.models.yourmt3.utils.metrics import compute_track_metrics
-from mt3_infer.models.yourmt3.utils.metrics import AMTMetrics
+# Removed AMTMetrics import - training-only, not needed for inference
 # from utils.utils import write_model_output_as_npy
 from mt3_infer.models.yourmt3.utils.utils import write_model_output_as_midi, create_inverse_vocab, write_err_cnt_as_json
 from mt3_infer.models.yourmt3.utils.utils import Timer
@@ -66,12 +64,6 @@ class YourMT3(pl.LightningModule):
             model_cfg: Optional[Dict] = None,
             shared_cfg: Optional[Dict] = None,
             pretrained: bool = False,
-            optimizer_name: str = 'adamwscale',
-            scheduler_name: str = 'cosine',
-            base_lr: float = None,  # None: 'auto' for AdaFactor, 1e-3 for constant, 1e-2 for cosine
-            max_steps: Optional[int] = None,
-            weight_decay: float = 0.0,
-            init_factor: Optional[Union[str, float]] = None,
             task_manager: TaskManager = TaskManager(),
             eval_subtask_key: Optional[str] = "default",
             eval_vocab: Optional[Dict] = None,
@@ -79,9 +71,6 @@ class YourMT3(pl.LightningModule):
             write_output_dir: Optional[str] = None,
             write_output_vocab: Optional[Dict] = None,
             onset_tolerance: float = 0.05,
-            add_pitch_class_metric: Optional[List[str]] = None,
-            add_melody_metric_to_singing: bool = True,
-            test_optimal_octave_shift: bool = False,
             test_pitch_shift_layer: Optional[str] = None,
             **kwargs: Any) -> None:
         super().__init__()
@@ -236,9 +225,8 @@ class YourMT3(pl.LightningModule):
         self.audio_cfg = audio_cfg
         self.model_cfg = model_cfg
         self.shared_cfg = shared_cfg
-        self.save_hyperparameters()
-        if self.global_rank == 0:
-            print(self.hparams)
+        # Removed save_hyperparameters() - not needed for inference-only
+        # Removed global_rank check - not needed for inference-only
 
         # Encoder and Decoder and LM-head
         self.encoder = None
@@ -262,9 +250,8 @@ class YourMT3(pl.LightningModule):
         #     "lm_head": self.lm_head,
         # })
 
-        # Tables (for logging)
-        columns = ['Ep', 'Track ID', 'Pred Events', 'Actual Events', 'Pred Notes', 'Actual Notes']
-        self.sample_table = wandb.Table(columns=columns)
+        # Removed wandb.Table - not needed for inference-only usage
+        # Training logging code is commented out below (lines 668-676)
 
         # Output MIDI
         if write_output_dir is not None:
@@ -307,77 +294,8 @@ class YourMT3(pl.LightningModule):
         # `shift_right` function for decoding
         self.shift_right_fn = self.decoder._shift_right
 
-    def setup(self, stage: str) -> None:
-        # Defining metrics
-        if self.hparams.eval_vocab is None:
-            extra_classes_per_dataset = [None]
-        else:
-            extra_classes_per_dataset = [
-                list(v.keys()) if v is not None else None for v in self.hparams.eval_vocab
-            ]  # e.g. [['Piano'], ['Guitar'], ['Piano'], ['Piano', 'Strings', 'Winds'], None]
-
-        # For direct addition of extra metrics using full metric name
-        extra_metrics = None
-        if self.hparams.add_melody_metric_to_singing is True:
-            extra_metrics = ["melody_rpa_Singing Voice", "melody_rca_Singing Voice", "melody_oa_Singing Voice"]
-
-        # Add pitch class metric
-        if self.hparams.add_pitch_class_metric is not None:
-            for sublist in extra_classes_per_dataset:
-                for name in self.hparams.add_pitch_class_metric:
-                    if sublist is not None and name in sublist:
-                        sublist += [name + "_pc"]
-
-        extra_classes_unique = list(
-            set(item for sublist in extra_classes_per_dataset if sublist is not None
-                for item in sublist))  # e.g. ['Strings', 'Winds', 'Guitar', 'Piano']
-        dm = self.trainer.datamodule
-
-        # Train/Vaidation-only
-        if stage == "fit":
-            self.val_metrics_macro = AMTMetrics(prefix=f'validation/macro_', extra_classes=extra_classes_unique)
-            self.val_metrics = nn.ModuleList()  # val_metric is a list of AMTMetrics objects
-            for i in range(dm.num_val_dataloaders):
-                self.val_metrics.append(
-                    AMTMetrics(prefix=f'validation/({dm.get_val_dataset_name(i)})',
-                               extra_classes=extra_classes_per_dataset[i],
-                               error_types=DECODING_ERR_TYPES))
-
-            # Add pitchshift layer
-            if self.shared_cfg["AUGMENTATION"]["train_pitch_shift_range"] in [None, [0, 0]]:
-                self.pitchshift = None
-            else:
-                # torchaudio pitchshifter requires a dummy input for initialization in DDP
-                input_shape = (self.shared_cfg["BSZ"]["train_local"], 1, self.audio_cfg["input_frames"])
-                self.pitchshift = PitchShiftLayer(
-                    pshift_range=self.shared_cfg["AUGMENTATION"]["train_pitch_shift_range"],
-                    expected_input_shape=input_shape,
-                    device=self.device)
-
-        # Test-only
-        elif stage == "test":
-            # self.test_metrics_macro = AMTMetrics(
-            #     prefix=f'test/macro_', extra_classes=extra_classes_unique)
-            self.test_metrics = nn.ModuleList()
-            for i in range(dm.num_test_dataloaders):
-                self.test_metrics.append(
-                    AMTMetrics(prefix=f'test/({dm.get_test_dataset_name(i)})',
-                               extra_classes=extra_classes_per_dataset[i],
-                               extra_metrics=extra_metrics,
-                               error_types=DECODING_ERR_TYPES))
-
-            # Test pitch shift layer: debug only
-            if self.test_pitch_shift_layer is not None:
-                self.test_pitch_shift_semitone = int(self.test_pitch_shift_layer)
-                self.pitchshift = PitchShiftLayer(
-                    pshift_range=[self.test_pitch_shift_semitone, self.test_pitch_shift_semitone])
-
-    def configure_optimizers(self) -> None:
-        """Configure optimizer and scheduler (PATCHED for inference-only - skips optimizer setup)"""
-        # INFERENCE-ONLY PATCH: Skip optimizer/scheduler setup to avoid importing
-        # model.optimizers which causes protobuf conflicts with transformers/tensorflow
-        print("⚠️  configure_optimizers() called in inference-only mode - skipping")
-        return None  # Return None for inference-only (no training needed)
+    # Removed setup() method - training-only, not needed for inference
+    # Removed configure_optimizers() method - training-only, not needed for inference
 
     def forward(
             self,
@@ -561,385 +479,9 @@ class YourMT3(pl.LightningModule):
         else:
             return pred_token_array_file, loss
 
-    def training_step(self, batch, batch_idx) -> torch.Tensor:
-        # batch: {
-        # 'dataset1': [Tuple[audio_segments(b, 1, t), tokens(b, max_token_len), ...]]
-        # 'dataset2': [Tuple[audio_segments(b, 1, t), tokens(b, max_token_len), ...]]
-        # 'dataset3': ...
-        # }
-        audio_segments, note_tokens, pshift_steps = [torch.cat(t, dim=0) for t in zip(*batch.values())]
-
-        if self.pitchshift is not None:
-            # Pitch shift
-            n_groups = len(batch)
-            audio_segments = torch.chunk(audio_segments, n_groups, dim=0)
-            pshift_steps = torch.chunk(pshift_steps, n_groups, dim=0)
-            for p in pshift_steps:
-                assert p.eq(p[0]).all().item()
-
-            audio_segments = torch.cat([self.pitchshift(a, p[0].item()) for a, p in zip(audio_segments, pshift_steps)],
-                                       dim=0)
-
-        loss = self(audio_segments, note_tokens)['loss']
-        self.log('train_loss',
-                 loss,
-                 on_step=True,
-                 on_epoch=True,
-                 prog_bar=True,
-                 batch_size=note_tokens.shape[0],
-                 sync_dist=True)
-        # print('lr', self.trainer.optimizers[0].param_groups[0]['lr'])
-        return loss
-
-    def validation_step(self, batch, batch_idx, dataloader_idx=0) -> Dict:
-        # File-wise validation
-        if self.task_manager.num_decoding_channels == 1:
-            bsz = self.shared_cfg["BSZ"]["validation"]
-        else:
-            bsz = self.shared_cfg["BSZ"]["validation"] // self.task_manager.num_decoding_channels * 3
-        # audio_segments, notes_dict, note_token_array, task_token_array = batch
-        audio_segments, notes_dict, note_token_array = batch
-        task_token_array = None
-
-        # Loop through the tensor in chunks of bsz (=subbsz actually)
-        n_items = audio_segments.shape[0]
-        start_secs_file = [32767 * i / 16000 for i in range(n_items)]
-        with Timer() as t:
-            pred_token_array_file, loss = self.inference_file(bsz, audio_segments, note_token_array, task_token_array)
-            """
-            notes_dict: # Ground truth notes
-                {
-                    'mtrack_id': int,
-                    'program': List[int],
-                    'is_drum': bool,
-                    'duration_sec': float,
-                    'notes': List[Note],
-                }
-            """
-            # Process a list of channel-wise token arrays for a file
-            num_channels = self.task_manager.num_decoding_channels
-            pred_notes_in_file = []
-            n_err_cnt = Counter()
-            for ch in range(num_channels):
-                pred_token_array_ch = [arr[:, ch, :] for arr in pred_token_array_file]  # (B, L)
-                zipped_note_events_and_tie, list_events, ne_err_cnt = self.task_manager.detokenize_list_batches(
-                    pred_token_array_ch, start_secs_file, return_events=True)
-                pred_notes_ch, n_err_cnt_ch = merge_zipped_note_events_and_ties_to_notes(zipped_note_events_and_tie)
-                pred_notes_in_file.append(pred_notes_ch)
-                n_err_cnt += n_err_cnt_ch
-            pred_notes = mix_notes(pred_notes_in_file)  # This is the mixed notes from all channels
-
-            if self.hparams.write_output_dir is not None:
-                track_info = [notes_dict[k] for k in notes_dict.keys() if k.endswith("_id")][0]
-                dataset_info = [k for k in notes_dict.keys() if k.endswith('_id')][0][:-3]
-                # write_model_output_as_npy(zipped_note_events_and_tie, self.hparams.write_output_dir,
-                #                           track_info)
-                write_model_output_as_midi(pred_notes,
-                                           self.hparams.write_output_dir,
-                                           track_info,
-                                           self.midi_output_inverse_vocab,
-                                           output_dir_suffix=str(dataset_info) + '_' +
-                                           str(self.hparams.eval_subtask_key))
-            # generate sample text to display in log table
-            # pred_events_text = [str([list_events[0][:200]])]
-            # pred_notes_text = [str([pred_notes[:200]])]
-
-            # this is local GPU metric per file, not global metric in DDP
-            drum_metric, non_drum_metric, instr_metric = compute_track_metrics(
-                pred_notes,
-                notes_dict['notes'],
-                eval_vocab=self.hparams.eval_vocab[dataloader_idx],
-                eval_drum_vocab=self.hparams.eval_drum_vocab,
-                onset_tolerance=self.hparams.onset_tolerance,
-                add_pitch_class_metric=self.hparams.add_pitch_class_metric)
-            self.val_metrics[dataloader_idx].bulk_update(drum_metric)
-            self.val_metrics[dataloader_idx].bulk_update(non_drum_metric)
-            self.val_metrics[dataloader_idx].bulk_update(instr_metric)
-            self.val_metrics_macro.bulk_update(drum_metric)
-            self.val_metrics_macro.bulk_update(non_drum_metric)
-            self.val_metrics_macro.bulk_update(instr_metric)
-
-        # Log sample table: predicted notes and ground truth notes
-        # if batch_idx in (0, 1) and self.global_rank == 0:
-        #     actual_notes_text = [str([notes_dict['notes'][:200]])]
-        #     actual_tokens = token_array[0, :200].detach().cpu().numpy().tolist()
-        #     actual_events_text = [str(self.tokenizer._decode(actual_tokens))]
-        #     track_info = [notes_dict[k] for k in notes_dict.keys() if k.endswith("_id")]
-        #     self.sample_table.add_data(self.current_epoch, track_info, pred_events_text,
-        #                                actual_events_text, pred_notes_text, actual_notes_text)
-        #     self.logger.log_table('Samples', self.sample_table.columns, self.sample_table.data)
-
-        decoding_time_sec = t.elapsed_time()
-        self.log('val_loss', loss, prog_bar=True, batch_size=n_items, sync_dist=True)
-        # self.val_metrics[dataloader_idx].bulk_update_errors({'decoding_time': decoding_time_sec})
-
-    def on_validation_epoch_end(self) -> None:
-        for val_metrics in self.val_metrics:
-            self.log_dict(val_metrics.bulk_compute(), sync_dist=True)
-            val_metrics.bulk_reset()
-        self.log_dict(self.val_metrics_macro.bulk_compute(), sync_dist=True)
-        self.val_metrics_macro.bulk_reset()
-
-    def test_step(self, batch, batch_idx, dataloader_idx=0) -> Dict:
-        # File-wise evaluation
-        if self.task_manager.num_decoding_channels == 1:
-            bsz = self.shared_cfg["BSZ"]["validation"]
-        else:
-            bsz = self.shared_cfg["BSZ"]["validation"] // self.task_manager.num_decoding_channels * 3
-        # audio_segments, notes_dict, note_token_array, task_token_array = batch
-        audio_segments, notes_dict, note_token_array = batch
-        task_token_array = None
-
-        # Test pitch shift layer: debug only
-        if self.test_pitch_shift_layer is not None and self.test_pitch_shift_semitone != 0:
-            for n in notes_dict['notes']:
-                if n.is_drum == False:
-                    n.pitch = n.pitch + self.test_pitch_shift_semitone
-
-        # Loop through the tensor in chunks of bsz (=subbsz actually)
-        n_items = audio_segments.shape[0]
-        start_secs_file = [32767 * i / 16000 for i in range(n_items)]
-
-        if self.test_pitch_shift_layer is not None and self.hparams.write_output_dir is not None:
-            pred_token_array_file, loss, x_ps = self.inference_file(bsz, audio_segments, None, None)
-        else:
-            pred_token_array_file, loss = self.inference_file(bsz, audio_segments, None, None)
-        if len(pred_token_array_file) > 0:
-
-            # Process a list of channel-wise token arrays for a file
-            num_channels = self.task_manager.num_decoding_channels
-            pred_notes_in_file = []
-            n_err_cnt = Counter()
-            for ch in range(num_channels):
-                pred_token_array_ch = [arr[:, ch, :] for arr in pred_token_array_file]  # (B, L)
-                zipped_note_events_and_tie, list_events, ne_err_cnt = self.task_manager.detokenize_list_batches(
-                    pred_token_array_ch, start_secs_file, return_events=True)
-                pred_notes_ch, n_err_cnt_ch = merge_zipped_note_events_and_ties_to_notes(zipped_note_events_and_tie)
-                pred_notes_in_file.append(pred_notes_ch)
-                n_err_cnt += n_err_cnt_ch
-            pred_notes = mix_notes(pred_notes_in_file)  # This is the mixed notes from all channels
-
-            if self.test_pitch_shift_layer is not None and self.hparams.write_output_dir is not None:
-                # debug only
-                wav_output_dir = os.path.join(self.hparams.write_output_dir, f"model_output_{dataset_info}")
-                os.makedirs(wav_output_dir, exist_ok=True)
-                wav_output_file = os.path.join(wav_output_dir, f"{track_info}_ps_{self.test_pitch_shift_semitone}.wav")
-                torchaudio.save(wav_output_file, x_ps.squeeze(1), 16000, bits_per_sample=16)
-
-            drum_metric, non_drum_metric, instr_metric = compute_track_metrics(
-                pred_notes,
-                notes_dict['notes'],
-                eval_vocab=self.hparams.eval_vocab[dataloader_idx],
-                eval_drum_vocab=self.hparams.eval_drum_vocab,
-                onset_tolerance=self.hparams.onset_tolerance,
-                add_pitch_class_metric=self.hparams.add_pitch_class_metric,
-                add_melody_metric=['Singing Voice'] if self.hparams.add_melody_metric_to_singing else None,
-                add_frame_metric=True,
-                add_micro_metric=True,
-                add_multi_f_metric=True)
-
-            if self.hparams.write_output_dir is not None and self.global_rank == 0:
-                # write model output to file
-                track_info = [notes_dict[k] for k in notes_dict.keys() if k.endswith("_id")][0]
-                dataset_info = [k for k in notes_dict.keys() if k.endswith('_id')][0][:-3]
-                f_score = f"OnF{non_drum_metric['onset_f']:.2f}_MulF{instr_metric['multi_f']:.2f}"
-                write_model_output_as_midi(pred_notes,
-                                           self.hparams.write_output_dir,
-                                           track_info,
-                                           self.midi_output_inverse_vocab,
-                                           output_dir_suffix=str(dataset_info) + '_' +
-                                           str(self.hparams.eval_subtask_key) + '_' + f_score)
-                write_err_cnt_as_json(track_info, self.hparams.write_output_dir,
-                                      str(dataset_info) + '_' + str(self.hparams.eval_subtask_key) + '_' + f_score,
-                                      n_err_cnt, ne_err_cnt)
-
-            # Test with optimal octave shift
-            if self.hparams.test_optimal_octave_shift:
-                track_info = [notes_dict[k] for k in notes_dict.keys() if k.endswith("_id")][0]
-                dataset_info = [k for k in notes_dict.keys() if k.endswith('_id')][0][:-3]
-                score = [instr_metric['onset_f_Bass']]
-                ref_notes_plus = []
-                ref_notes_minus = []
-                for note in notes_dict['notes']:
-                    if note.is_drum == True:
-                        ref_notes_plus.append(note)
-                        ref_notes_minus.append(note)
-                    else:
-                        ref_notes_plus.append(
-                            Note(is_drum=note.is_drum,
-                                 program=note.program,
-                                 onset=note.onset,
-                                 offset=note.offset,
-                                 pitch=note.pitch + 12,
-                                 velocity=note.velocity))
-                        ref_notes_minus.append(
-                            Note(is_drum=note.is_drum,
-                                 program=note.program,
-                                 onset=note.onset,
-                                 offset=note.offset,
-                                 pitch=note.pitch - 12,
-                                 velocity=note.velocity))
-
-                drum_metric_plus, non_drum_metric_plus, instr_metric_plus = compute_track_metrics(
-                    pred_notes,
-                    ref_notes_plus,
-                    eval_vocab=self.hparams.eval_vocab[dataloader_idx],
-                    eval_drum_vocab=self.hparams.eval_drum_vocab,
-                    onset_tolerance=self.hparams.onset_tolerance,
-                    add_pitch_class_metric=self.hparams.add_pitch_class_metric)
-                drum_metric_minus, non_drum_metric_minus, instr_metric_minus = compute_track_metrics(
-                    ref_notes_minus,
-                    notes_dict['notes'],
-                    eval_vocab=self.hparams.eval_vocab[dataloader_idx],
-                    eval_drum_vocab=self.hparams.eval_drum_vocab,
-                    onset_tolerance=self.hparams.onset_tolerance,
-                    add_pitch_class_metric=self.hparams.add_pitch_class_metric)
-
-                score.append(instr_metric_plus['onset_f_Bass'])
-                score.append(instr_metric_minus['onset_f_Bass'])
-                max_index = score.index(max(score))
-                if max_index == 0:
-                    print(f"ZERO: {track_info}, z/p/m: {score[0]:.2f}/{score[1]:.2f}/{score[2]:.2f}")
-                elif max_index == 1:
-                    # plus
-                    instr_metric['onset_f_Bass'] = instr_metric_plus['onset_f_Bass']
-                    print(f"PLUS: {track_info}, z/p/m: {score[0]:.2f}/{score[1]:.2f}/{score[2]:.2f}")
-                    write_model_output_as_midi(ref_notes_plus,
-                                               self.hparams.write_output_dir,
-                                               track_info + '_ref_octave_plus',
-                                               self.midi_output_inverse_vocab,
-                                               output_dir_suffix=str(dataset_info) + '_' +
-                                               str(self.hparams.eval_subtask_key))
-                else:
-                    # minus
-                    instr_metric['onset_f_Bass'] = instr_metric_minus['onset_f_Bass']
-                    print(f"MINUS: {track_info}, z/p/m: {score[0]:.2f}/{score[1]:.2f}/{score[2]:.2f}")
-                    write_model_output_as_midi(ref_notes_minus,
-                                               self.hparams.write_output_dir,
-                                               track_info + '_ref_octave_minus',
-                                               self.midi_output_,
-                                               output_dir_suffix=str(dataset_info) + '_' +
-                                               str(self.hparams.eval_subtask_key))
-
-            self.test_metrics[dataloader_idx].bulk_update(drum_metric)
-            self.test_metrics[dataloader_idx].bulk_update(non_drum_metric)
-            self.test_metrics[dataloader_idx].bulk_update(instr_metric)
-            # self.test_metrics_macro.bulk_update(drum_metric)
-            # self.test_metrics_macro.bulk_update(non_drum_metric)
-            # self.test_metrics_macro.bulk_update(instr_metric)
-
-    def on_test_epoch_end(self) -> None:
-        # all_gather is done seeminglesly by torchmetrics
-        for test_metrics in self.test_metrics:
-            self.log_dict(test_metrics.bulk_compute(), sync_dist=True)
-            test_metrics.bulk_reset()
-        # self.log_dict(self.test_metrics_macro.bulk_compute(), sync_dist=True)
-        # self.test_metrics_macro.bulk_reset()
-
-
-def test_case_forward_mt3():
-    import torch
-    from config.config import audio_cfg, model_cfg, shared_cfg
-    from model.ymt3 import YourMT3
-    model = YourMT3()
-    model.eval()
-    x = torch.randn(2, 1, 32767)
-    labels = torch.randint(0, 596, (2, 1, 1024), requires_grad=False)  # (B, C=1, T)
-    task_tokens = torch.LongTensor([])
-    output = model.forward(x, labels, task_tokens)
-    logits, loss = output['logits'], output['loss']
-    assert logits.shape == (2, 1024, 596)  # (B, N, vocab_size)
-
-
-def test_case_inference_mt3():
-    import torch
-    from config.config import audio_cfg, model_cfg, shared_cfg
-    from model.ymt3 import YourMT3
-    model_cfg["num_max_positions"] = 1024 + 3 + 1
-    model = YourMT3(model_cfg=model_cfg)
-    model.eval()
-    x = torch.randn(2, 1, 32767)
-    task_tokens = torch.randint(0, 596, (2, 3), requires_grad=False)
-    pred_ids = model.inference(x, task_tokens, max_token_length=10)  # (2, 3, 9) (B, C, L-task_len)
-    # TODO: need to check the length of pred_ids when task_tokens is not None
-
-
-def test_case_forward_enc_perceiver_tf_dec_t5():
-    import torch
-    from model.ymt3 import YourMT3
-    from config.config import audio_cfg, model_cfg, shared_cfg
-    model_cfg["encoder_type"] = "perceiver-tf"
-    audio_cfg["codec"] = "spec"
-    audio_cfg["hop_length"] = 300
-
-    model = YourMT3(audio_cfg=audio_cfg, model_cfg=model_cfg)
-    model.eval()
-
-    x = torch.randn(2, 1, 32767)
-    labels = torch.randint(0, 596, (2, 1, 1024), requires_grad=False)
-
-    # forward
-    output = model.forward(x, labels)
-    logits, loss = output['logits'], output['loss']  # logits: (2, 1024, 596) (B, N, vocab_size)
-
-    # inference
-    pred_ids = model.inference(x, None, max_token_length=3)  # (2, 1, 3) (B, C, L)
-
-
-def test_case_forward_enc_conformer_dec_t5():
-    import torch
-    from model.ymt3 import YourMT3
-    from config.config import audio_cfg, model_cfg, shared_cfg
-    model_cfg["encoder_type"] = "conformer"
-    audio_cfg["codec"] = "melspec"
-    audio_cfg["hop_length"] = 128
-    model = YourMT3(audio_cfg=audio_cfg, model_cfg=model_cfg)
-    model.eval()
-
-    x = torch.randn(2, 1, 32767)
-    labels = torch.randint(0, 596, (2, 1024), requires_grad=False)
-
-    # forward
-    output = model.forward(x, labels)
-    logits, loss = output['logits'], output['loss']  # logits: (2, 1024, 596) (B, N, vocab_size)
-
-    # inference
-    pred_ids = model.inference(x, None, 20)  # (2, 1, 20) (B, C, L)
-
-
-def test_case_enc_perceiver_tf_dec_multi_t5():
-    import torch
-    from model.ymt3 import YourMT3
-    from config.config import audio_cfg, model_cfg, shared_cfg
-    model_cfg["encoder_type"] = "perceiver-tf"
-    model_cfg["decoder_type"] = "multi-t5"
-    model_cfg["encoder"]["perceiver-tf"]["attention_to_channel"] = True
-    model_cfg["encoder"]["perceiver-tf"]["num_latents"] = 26
-    audio_cfg["codec"] = "spec"
-    audio_cfg["hop_length"] = 300
-    model = YourMT3(audio_cfg=audio_cfg, model_cfg=model_cfg)
-    model.eval()
-
-    x = torch.randn(2, 1, 32767)
-    labels = torch.randint(0, 596, (2, 13, 200), requires_grad=False)  # (B, C, T)
-
-    # x = model.spectrogram(x)
-    # x = model.pre_encoder(x)  # (2, 110, 128, 128) (B, T, C, D)
-    # enc_hs = model.encoder(inputs_embeds=x)["last_hidden_state"]  # (2, 110, 128, 128) (B, T, C, D)
-    # enc_hs = model.pre_decoder(enc_hs)  # (2, 13, 110, 512) (B, C, T, D)
-
-    # dec_input_ids = model.shift_right_fn(labels)  # (2, 13, 200) (B, C, T)
-    # dec_inputs_embeds = model.embed_tokens(dec_input_ids)  # (2, 13, 200, 512) (B, C, T, D)
-    # dec_hs, _ = model.decoder(
-    #     inputs_embeds=dec_inputs_embeds, encoder_hidden_states=enc_hs, return_dict=False)
-    # logits = model.lm_head(dec_hs)  # (2, 13, 200, 596) (B, C, T, vocab_size)
-
-    # forward
-    x = torch.randn(2, 1, 32767)
-    labels = torch.randint(0, 596, (2, 13, 200), requires_grad=False)  # (B, C, T)
-    output = model.forward(x, labels)
-    logits, loss = output['logits'], output['loss']  # (2, 13, 200, 596) (B, C, T, vocab_size)
-
-    # inference
-    model.max_total_token_length = 123  # to save time..
-    pred_ids = model.inference(x, None)  # (2, 13, 123) (B, C, L)
+    # Removed training_step() - training-only, not needed for inference
+    # Removed validation_step() - training-only, not needed for inference
+    # Removed test_step() - training-only, not needed for inference
+    # Removed on_validation_epoch_end() - training-only, not needed for inference
+    # Removed on_test_epoch_end() - training-only, not needed for inference
+    # Removed test_case_* functions - development/testing code, not needed for inference

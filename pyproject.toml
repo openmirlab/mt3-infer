@@ -1,6 +1,6 @@
 [project]
 name = "mt3-infer"
-version = "0.1.1"
+version = "0.1.2"
 description = "Unified, inference-only toolkit for MT3 model family (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3)"
 readme = "README.md"
 requires-python = ">=3.8"

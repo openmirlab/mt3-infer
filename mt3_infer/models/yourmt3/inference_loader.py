@@ -38,8 +38,8 @@ def load_model_for_inference(
     """
     Load YourMT3 model from checkpoint for inference only.
 
-    This is a simplified version of load_model_checkpoint() from model_helper.py
-    that doesn't require the full training infrastructure.
+    This loader bypasses the training infrastructure and directly loads PyTorch Lightning
+    checkpoints for inference-only usage.
 
     Args:
         checkpoint_path: Path to .ckpt checkpoint file

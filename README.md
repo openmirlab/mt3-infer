@@ -314,7 +314,7 @@ See the CLI section above for detailed download instructions.
 
 ## Project Status
 
-**Current Version:** 0.1.1 (Production Ready!)
+**Current Version:** 0.1.2 (Production Ready!)
 
 ### ✅ Completed Features
 - ✅ Core infrastructure (MT3Base interface, utilities)
