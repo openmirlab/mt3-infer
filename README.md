@@ -5,15 +5,17 @@
 MT3-Infer provides a clean, framework-neutral API for running music transcription inference across multiple MT3 implementations with a single consistent interface.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.7.1-red.svg)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/mt3-infer)](https://pypi.org/project/mt3-infer/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1gbSAuij78YKMfMnYUVO8bOQZLTOzrbFn?usp=sharing)
 
 ---
 
 ## 🎉 What's New
 
-- **v0.1.1** (Latest): Fixed YAML config files inclusion in package distribution
+- **v0.1.3** (Latest): Google Colab support, removed note_seq dependency, transformers 4.44+ compatibility
+- **v0.1.1**: Fixed YAML config files inclusion in package distribution
 - **v0.1.0**: Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
 
 ## Features
@@ -26,6 +28,15 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 - ✅ **Framework Isolated**: Clean PyTorch/TensorFlow/JAX separation
 - ✅ **CLI Tool**: `mt3-infer` command-line interface
 - ✅ **Reproducible**: Pinned dependencies, verified checkpoints
+- ✅ **Google Colab**: Ready-to-use notebook with audio preview
+
+---
+
+## Try it in Google Colab
+
+No installation needed! Click the badge below to try MT3-Infer directly in your browser:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1gbSAuij78YKMfMnYUVO8bOQZLTOzrbFn?usp=sharing)
 
 ---
 
