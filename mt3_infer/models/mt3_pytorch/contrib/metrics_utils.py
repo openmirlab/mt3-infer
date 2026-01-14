@@ -20,8 +20,8 @@ import functools
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple, TypeVar
 
 from mt3_infer.models.mt3_pytorch.contrib import event_codec, note_sequences, run_length_encoding
+from mt3_infer.models.mt3_pytorch.contrib.note_sequence_lite import NoteSequence
 
-import note_seq
 import numpy as np
 import pretty_midi
 
@@ -145,15 +145,30 @@ def event_predictions_to_ns(
     }
 
 
-def get_prettymidi_pianoroll(ns: note_seq.NoteSequence, fps: float,
+def get_prettymidi_pianoroll(ns: NoteSequence, fps: float,
                              is_drum: bool):
-    """Convert NoteSequence to pianoroll through pretty_midi."""
-    for note in ns.notes:
-        if is_drum or note.end_time - note.start_time < 0.05:
-            # Give all drum notes a fixed length, and all others a min length
-            note.end_time = note.start_time + 0.05
+    """Convert NoteSequence to pianoroll through pretty_midi.
 
-    pm = note_seq.note_sequence_to_pretty_midi(ns)
+    Note: This function requires note_seq for full functionality.
+    For inference-only use, this is not needed.
+    """
+    # Create PrettyMIDI directly from our lightweight NoteSequence
+    pm = pretty_midi.PrettyMIDI()
+    instrument = pretty_midi.Instrument(program=0, is_drum=is_drum)
+
+    for note in ns.notes:
+        end_time = note.end_time
+        if is_drum or end_time - note.start_time < 0.05:
+            end_time = note.start_time + 0.05
+        pm_note = pretty_midi.Note(
+            velocity=note.velocity,
+            pitch=note.pitch,
+            start=note.start_time,
+            end=end_time
+        )
+        instrument.notes.append(pm_note)
+
+    pm.instruments.append(instrument)
     end_time = pm.get_end_time()
     cc = [
         # all sound off

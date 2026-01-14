@@ -17,7 +17,7 @@ def check_torch_version() -> None:
         FrameworkError: Version mismatch or torch not installed.
 
     Note:
-        Required version: torch==2.7.1 (aligned with worzpro-demo)
+        Required version: torch>=2.0.0 (for Colab and broad compatibility)
     """
     try:
         import torch
@@ -28,15 +28,22 @@ def check_torch_version() -> None:
             "Or: uv add 'mt3-infer[torch]'"
         ) from e
 
-    required_version = "2.7.1"
+    required_major = 2
+    required_minor = 0
     actual_version = torch.__version__.split("+")[0]  # Remove CUDA suffix
 
-    if not actual_version.startswith(required_version):
+    try:
+        major, minor, *_ = map(int, actual_version.split(".")[:2])
+    except (ValueError, IndexError) as e:
         raise FrameworkError(
-            f"torch=={required_version} required, found torch=={actual_version}\n"
-            "Version mismatch detected to prevent conflicts with worzpro-demo.\n"
-            "Fix with: uv sync --reinstall-package torch\n"
-            "See docs/dev/PRINCIPLES.md for version alignment strategy."
+            f"Cannot parse PyTorch version: {actual_version}"
+        ) from e
+
+    if major < required_major or (major == required_major and minor < required_minor):
+        raise FrameworkError(
+            f"torch>={required_major}.{required_minor}.0 required, "
+            f"found torch=={actual_version}\n"
+            "Upgrade with: pip install --upgrade torch"
         )
 
 
@@ -122,13 +129,14 @@ def get_device(device_hint: Optional[str] = None) -> str:
         ValueError: Invalid device hint.
 
     Note:
-        This function does NOT check framework availability.
-        Framework-specific device placement should be handled by adapters.
+        This function includes automatic GPU-to-CPU fallback if GPU fails.
 
     Example:
         >>> device = get_device("auto")  # Returns "cuda" if available, else "cpu"
         >>> device = get_device("cpu")   # Forces CPU
     """
+    import warnings
+
     if device_hint is None:
         device_hint = "auto"
 
@@ -140,36 +148,58 @@ def get_device(device_hint: Optional[str] = None) -> str:
         )
 
     if device_hint == "auto":
-        # Try to detect CUDA availability
-        # This is framework-agnostic detection
+        # Try PyTorch CUDA with actual tensor test (not just is_available)
         try:
             import torch
             if torch.cuda.is_available():
-                return "cuda"
+                # Actually try to use CUDA - this catches runtime errors
+                try:
+                    test_tensor = torch.zeros(1, device="cuda")
+                    del test_tensor
+                    return "cuda"
+                except Exception as e:
+                    warnings.warn(
+                        f"CUDA available but failed to initialize: {e}. "
+                        "Falling back to CPU.",
+                        UserWarning
+                    )
         except ImportError:
             pass
 
-        try:
-            import tensorflow as tf
-            if tf.config.list_physical_devices("GPU"):
-                return "cuda"  # Return "cuda" for consistency
-        except ImportError:
-            pass
-
-        try:
-            import jax
-            if jax.devices("gpu"):
-                return "cuda"  # Return "cuda" for consistency
-        except ImportError:
-            pass
-
-        # No GPU detected, default to CPU
-        import warnings
+        # No working GPU, default to CPU
         warnings.warn(
-            "No GPU detected. Using CPU for inference. "
+            "No GPU detected or GPU initialization failed. Using CPU for inference. "
             "This may be significantly slower than GPU inference.",
             UserWarning
         )
         return "cpu"
+
+    # User explicitly requested cuda - try it with fallback
+    if device_hint == "cuda":
+        try:
+            import torch
+            if torch.cuda.is_available():
+                try:
+                    test_tensor = torch.zeros(1, device="cuda")
+                    del test_tensor
+                    return "cuda"
+                except Exception as e:
+                    warnings.warn(
+                        f"CUDA requested but failed: {e}. Falling back to CPU.",
+                        UserWarning
+                    )
+                    return "cpu"
+            else:
+                warnings.warn(
+                    "CUDA requested but not available. Falling back to CPU.",
+                    UserWarning
+                )
+                return "cpu"
+        except ImportError:
+            warnings.warn(
+                "CUDA requested but PyTorch not installed. Falling back to CPU.",
+                UserWarning
+            )
+            return "cpu"
 
     return device_hint

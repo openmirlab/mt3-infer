@@ -19,7 +19,7 @@ import itertools
 
 from typing import MutableMapping, MutableSet, Optional, Sequence, Tuple
 from mt3_infer.models.mt3_pytorch.contrib import event_codec, vocabularies, run_length_encoding
-import note_seq
+from mt3_infer.models.mt3_pytorch.contrib.note_sequence_lite import NoteSequence
 
 DEFAULT_VELOCITY = 100
 DEFAULT_NOTE_DURATION = 0.01
@@ -36,7 +36,7 @@ class TrackSpec:
 
 
 def extract_track(ns, program, is_drum):
-    track = note_seq.NoteSequence(ticks_per_quarter=220)
+    track = NoteSequence(ticks_per_quarter=220)
     track_notes = [note for note in ns.notes
                    if note.program == program and note.is_drum == is_drum]
     track.notes.extend(track_notes)
@@ -45,9 +45,9 @@ def extract_track(ns, program, is_drum):
     return track
 
 
-def trim_overlapping_notes(ns: note_seq.NoteSequence) -> note_seq.NoteSequence:
+def trim_overlapping_notes(ns: NoteSequence) -> NoteSequence:
     """Trim overlapping notes from a NoteSequence, dropping zero-length notes."""
-    ns_trimmed = note_seq.NoteSequence()
+    ns_trimmed = NoteSequence()
     ns_trimmed.CopyFrom(ns)
     channels = set((note.pitch, note.program, note.is_drum)
                    for note in ns_trimmed.notes)
@@ -65,7 +65,7 @@ def trim_overlapping_notes(ns: note_seq.NoteSequence) -> note_seq.NoteSequence:
     return ns_trimmed
 
 
-def assign_instruments(ns: note_seq.NoteSequence) -> None:
+def assign_instruments(ns: NoteSequence) -> None:
     """Assign instrument numbers to notes; modifies NoteSequence in place."""
     program_instruments = {}
     for note in ns.notes:
@@ -80,7 +80,7 @@ def assign_instruments(ns: note_seq.NoteSequence) -> None:
             note.instrument = program_instruments[note.program]
 
 
-def validate_note_sequence(ns: note_seq.NoteSequence) -> None:
+def validate_note_sequence(ns: NoteSequence) -> None:
     """Raise ValueError if NoteSequence contains invalid notes."""
     for note in ns.notes:
         if note.start_time >= note.end_time:
@@ -97,9 +97,9 @@ def note_arrays_to_note_sequence(
     velocities: Optional[Sequence[int]] = None,
     programs: Optional[Sequence[int]] = None,
     is_drums: Optional[Sequence[bool]] = None
-) -> note_seq.NoteSequence:
+) -> NoteSequence:
     """Convert note onset / offset / pitch / velocity arrays to NoteSequence."""
-    ns = note_seq.NoteSequence(ticks_per_quarter=220)
+    ns = NoteSequence(ticks_per_quarter=220)
     for onset_time, offset_time, pitch, velocity, program, is_drum in itertools.zip_longest(
             onset_times, [] if offset_times is None else offset_times,
             pitches, [] if velocities is None else velocities,
@@ -135,7 +135,7 @@ class NoteEventData:
 
 
 def note_sequence_to_onsets(
-    ns: note_seq.NoteSequence
+    ns: NoteSequence
 ) -> Tuple[Sequence[float], Sequence[NoteEventData]]:
     """Extract note onsets and pitches from NoteSequence proto."""
     # Sort by pitch to use as a tiebreaker for subsequent stable sort.
@@ -145,7 +145,7 @@ def note_sequence_to_onsets(
 
 
 def note_sequence_to_onsets_and_offsets(
-    ns: note_seq.NoteSequence,
+    ns: NoteSequence,
 ) -> Tuple[Sequence[float], Sequence[NoteEventData]]:
     """Extract onset & offset times and pitches from a NoteSequence proto.
 
@@ -171,7 +171,7 @@ def note_sequence_to_onsets_and_offsets(
 
 
 def note_sequence_to_onsets_and_offsets_and_programs(
-    ns: note_seq.NoteSequence,
+    ns: NoteSequence,
 ) -> Tuple[Sequence[float], Sequence[NoteEventData]]:
     """Extract onset & offset times and pitches & programs from a NoteSequence.
 
@@ -274,8 +274,8 @@ class NoteDecodingState:
     # whether or not we are in the tie section at the beginning of a segment
     is_tie_section: bool = False
     # partially-decoded NoteSequence
-    note_sequence: note_seq.NoteSequence = dataclasses.field(
-        default_factory=lambda: note_seq.NoteSequence(ticks_per_quarter=220))
+    note_sequence: NoteSequence = dataclasses.field(
+        default_factory=lambda: NoteSequence(ticks_per_quarter=220))
 
 
 def decode_note_onset_event(
@@ -296,7 +296,7 @@ def decode_note_onset_event(
 
 
 def _add_note_to_sequence(
-    ns: note_seq.NoteSequence,
+    ns: NoteSequence,
     start_time: float, end_time: float, pitch: int, velocity: int,
     program: int = 0, is_drum: bool = False
 ) -> None:
@@ -393,7 +393,7 @@ def begin_tied_pitches_section(state: NoteDecodingState) -> None:
 
 def flush_note_decoding_state(
     state: NoteDecodingState
-) -> note_seq.NoteSequence:
+) -> NoteSequence:
     """End all active notes and return resulting NoteSequence."""
     for onset_time, _ in state.active_pitches.values():
         state.current_time = max(

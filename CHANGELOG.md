@@ -2,7 +2,27 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
-## [0.1.2] - 2025-01-XX
+## [0.1.3] - 2026-01-14
+
+### Added
+- **Google Colab notebook** (`notebooks/quickstart_colab.ipynb`)
+  - 7-section workflow: install, download model, upload audio, run transcription, check outputs, preview results, download results
+  - Support for both CLI and Python API methods
+
+### Changed
+- **Relax dependency version constraints** for better compatibility
+  - `transformers`: `~=4.30.2` → `>=4.35.0` (fixes tokenizers build error on Python 3.12)
+  - `torch`: `==2.7.1` → `>=2.0.0` (allows Colab's pre-installed PyTorch)
+  - `torchvision`: `==0.22.1` → `>=0.15.0`
+  - `torchaudio`: `==2.7.1` → `>=2.0.0`
+- **Update minimum Python version**: 3.8 → 3.9 (required by matplotlib>=3.8.0)
+
+### Fixed
+- **Google Colab compatibility**: Fixed "Failed building wheel for tokenizers" error
+  - Old transformers required tokenizers<0.14 which lacked Python 3.12 wheels
+  - New transformers uses tokenizers>=0.14 with pre-built wheels
+
+## [0.1.2] - 2025-11-29
 
 ### Removed
 - **Training-related code**: Removed all training code to make mt3-infer a pure inference-only library

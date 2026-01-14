@@ -17,7 +17,8 @@
 from typing import Optional, Tuple, Union
 from dataclasses import dataclass
 from transformers import T5Config, T5PreTrainedModel
-from transformers.models.t5.modeling_t5 import Seq2SeqLMOutput, BaseModelOutput, BaseModelOutputWithPastAndCrossAttentions, checkpoint, T5LayerNorm, T5Block
+from transformers.models.t5.modeling_t5 import Seq2SeqLMOutput, BaseModelOutput, BaseModelOutputWithPastAndCrossAttentions, T5LayerNorm, T5Block
+from torch.utils.checkpoint import checkpoint
 from transformers.utils import logging
 import torch.nn as nn
 import copy
@@ -489,6 +490,12 @@ class T5Stack(T5PreTrainedModel):
         hidden_states = self.dropout(inputs_embeds)
         # print(self.name, 'after', hidden_states[0][0][:5])
 
+        # Create cache_position for transformers 4.44+ compatibility
+        cache_position = torch.arange(
+            past_key_values_length, past_key_values_length + seq_length,
+            device=inputs_embeds.device
+        )
+
         for i, (layer_module, past_key_value) in enumerate(zip(self.block, past_key_values)):
             layer_head_mask = head_mask[i]
             cross_attn_layer_head_mask = cross_attn_head_mask[i]
@@ -530,9 +537,10 @@ class T5Stack(T5PreTrainedModel):
                     encoder_decoder_position_bias=encoder_decoder_position_bias,
                     layer_head_mask=layer_head_mask,
                     cross_attn_layer_head_mask=cross_attn_layer_head_mask,
-                    past_key_value=past_key_value,
+                    past_key_values=past_key_value,
                     use_cache=use_cache,
                     output_attentions=output_attentions,
+                    cache_position=cache_position,
                 )
 
             # layer_outputs is a tuple with:

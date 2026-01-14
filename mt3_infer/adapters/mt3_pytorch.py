@@ -275,7 +275,6 @@ class MT3PyTorchAdapter(MT3Base):
 
         try:
             from mt3_infer.models.mt3_pytorch.contrib import vocabularies, metrics_utils
-            import note_seq
 
             # Convert tokens to predictions format
             predictions = []
@@ -524,20 +523,40 @@ class MT3PyTorchAdapter(MT3Base):
         return remapped
 
     def _note_sequence_to_midi(self, note_sequence) -> mido.MidiFile:
-        """Convert note-seq NoteSequence to mido.MidiFile."""
-        import note_seq
-        import tempfile
+        """Convert NoteSequence to mido.MidiFile without note_seq dependency."""
+        import pretty_midi
 
-        # Write to temporary MIDI file
+        # Create PrettyMIDI object
+        pm = pretty_midi.PrettyMIDI(initial_tempo=120.0)
+
+        # Group notes by (program, is_drum)
+        instruments = {}
+        for note in note_sequence.notes:
+            key = (note.program, note.is_drum)
+            if key not in instruments:
+                instruments[key] = []
+            instruments[key].append(note)
+
+        # Create instruments
+        for (program, is_drum), notes in instruments.items():
+            instrument = pretty_midi.Instrument(program=program, is_drum=is_drum)
+            for note in notes:
+                pm_note = pretty_midi.Note(
+                    velocity=note.velocity,
+                    pitch=note.pitch,
+                    start=note.start_time,
+                    end=note.end_time
+                )
+                instrument.notes.append(pm_note)
+            pm.instruments.append(instrument)
+
+        # Write to temp file and read with mido
+        import tempfile
         with tempfile.NamedTemporaryFile(suffix='.mid', delete=False) as tmp:
             tmp_path = tmp.name
 
-        note_seq.sequence_proto_to_midi_file(note_sequence, tmp_path)
-
-        # Load with mido
+        pm.write(tmp_path)
         midi = mido.MidiFile(tmp_path)
-
-        # Clean up
         Path(tmp_path).unlink()
 
         return midi

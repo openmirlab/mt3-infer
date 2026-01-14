@@ -19,8 +19,11 @@ import math
 
 from typing import Optional, Sequence
 from mt3_infer.models.mt3_pytorch.contrib import event_codec
-
-import note_seq
+from mt3_infer.models.mt3_pytorch.contrib.midi_constants import (
+    MIN_MIDI_PITCH, MAX_MIDI_PITCH,
+    MIN_MIDI_PROGRAM, MAX_MIDI_PROGRAM,
+    MAX_MIDI_VELOCITY,
+)
 
 # Default extra IDs for T5 vocabulary (typically 100 sentinel tokens)
 DEFAULT_EXTRA_IDS = 100
@@ -63,14 +66,14 @@ def velocity_to_bin(velocity, num_velocity_bins):
     if velocity == 0:
         return 0
     else:
-        return math.ceil(num_velocity_bins * velocity / note_seq.MAX_MIDI_VELOCITY)
+        return math.ceil(num_velocity_bins * velocity / MAX_MIDI_VELOCITY)
 
 
 def bin_to_velocity(velocity_bin, num_velocity_bins):
     if velocity_bin == 0:
         return 0
     else:
-        return int(note_seq.MAX_MIDI_VELOCITY * velocity_bin / num_velocity_bins)
+        return int(MAX_MIDI_VELOCITY * velocity_bin / num_velocity_bins)
 
 
 def drop_programs(tokens, codec: event_codec.Codec):
@@ -82,18 +85,18 @@ def drop_programs(tokens, codec: event_codec.Codec):
 def build_codec(vocab_config: VocabularyConfig):
     """Build event codec."""
     event_ranges = [
-        event_codec.EventRange('pitch', note_seq.MIN_MIDI_PITCH,
-                               note_seq.MAX_MIDI_PITCH),
+        event_codec.EventRange('pitch', MIN_MIDI_PITCH,
+                               MAX_MIDI_PITCH),
         # velocity bin 0 is used for note-off
         event_codec.EventRange('velocity', 0, vocab_config.num_velocity_bins),
         # used to indicate that a pitch is present at the beginning of a segment
         # (only has an "off" event as when using ties all pitch events until the
         # "tie" event belong to the tie section)
         event_codec.EventRange('tie', 0, 0),
-        event_codec.EventRange('program', note_seq.MIN_MIDI_PROGRAM,
-                               note_seq.MAX_MIDI_PROGRAM),
-        event_codec.EventRange('drum', note_seq.MIN_MIDI_PITCH,
-                               note_seq.MAX_MIDI_PITCH),
+        event_codec.EventRange('program', MIN_MIDI_PROGRAM,
+                               MAX_MIDI_PROGRAM),
+        event_codec.EventRange('drum', MIN_MIDI_PITCH,
+                               MAX_MIDI_PITCH),
     ]
 
     return event_codec.Codec(
