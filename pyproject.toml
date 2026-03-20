@@ -41,6 +41,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "mir-eval>=0.8.2",
     "soxr>=1.0.0",
+    "absl-py>=1.0.0",
 ]
 
 [project.optional-dependencies]

@@ -16,7 +16,8 @@
 # limitations under the License.
 from typing import Optional, Tuple, Union
 from transformers import T5Config, T5PreTrainedModel
-from transformers.models.t5.modeling_t5 import Seq2SeqLMOutput, BaseModelOutput, BaseModelOutputWithPastAndCrossAttentions, checkpoint, T5LayerNorm, T5Block
+from transformers.models.t5.modeling_t5 import Seq2SeqLMOutput, BaseModelOutput, BaseModelOutputWithPastAndCrossAttentions, T5LayerNorm, T5Block
+from torch.utils.checkpoint import checkpoint
 from transformers.utils import logging
 import torch.nn as nn
 import copy
@@ -209,6 +210,43 @@ class T5ForConditionalGeneration(T5PreTrainedModel):
             encoder_attentions=encoder_outputs.attentions,
         )
 
+    @torch.no_grad()
+    def generate(self, inputs, max_length=1024, **kwargs):
+        """Greedy autoregressive decoding (replaces transformers GenerationMixin)."""
+        batch_size = inputs.shape[0]
+        inputs_embeds = self.proj(inputs)
+        encoder_outputs = self.encoder(
+            inputs_embeds=inputs_embeds,
+            return_dict=True,
+        )
+        hidden_states = encoder_outputs[0]
+
+        decoder_input_ids = torch.ones(
+            (batch_size, 1), dtype=torch.long, device=inputs.device
+        ) * self.config.decoder_start_token_id
+
+        unfinished = torch.ones(batch_size, dtype=torch.long, device=inputs.device)
+        pad_id = self.config.pad_token_id if self.config.pad_token_id is not None else 0
+
+        for _ in range(max_length):
+            decoder_outputs = self.decoder(
+                input_ids=decoder_input_ids,
+                encoder_hidden_states=hidden_states,
+                return_dict=True,
+            )
+            lm_logits = self.lm_head(decoder_outputs[0])
+            next_tokens = torch.argmax(lm_logits[:, -1, :], dim=-1, keepdim=True)
+
+            next_tokens = next_tokens * unfinished.unsqueeze(-1) + pad_id * (1 - unfinished.unsqueeze(-1))
+            eos_mask = (next_tokens.squeeze(-1) == self.config.eos_token_id)
+            unfinished[eos_mask] = 0
+            decoder_input_ids = torch.cat([decoder_input_ids, next_tokens], dim=-1)
+
+            if unfinished.max() == 0:
+                break
+
+        return decoder_input_ids
+
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -295,6 +333,12 @@ class T5Stack(T5PreTrainedModel):
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
+    def get_head_mask(self, head_mask, num_layers):
+        """Compatibility shim for transformers v5 which removed this method."""
+        if head_mask is None:
+            return [None] * num_layers
+        return head_mask
+
     def forward(
         self,
         input_ids=None,
@@ -357,7 +401,7 @@ class T5Stack(T5PreTrainedModel):
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
         extended_attention_mask = self.get_extended_attention_mask(
-            attention_mask, input_shape, inputs_embeds.device)
+            attention_mask, input_shape)
 
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]
@@ -390,6 +434,12 @@ class T5Stack(T5PreTrainedModel):
                 seq=inputs_embeds.shape[1], offset=past_key_values_length)
 
         hidden_states = self.dropout(inputs_embeds)
+
+        # Create cache_position for transformers 4.44+ compatibility
+        cache_position = torch.arange(
+            past_key_values_length, past_key_values_length + seq_length,
+            device=inputs_embeds.device
+        )
 
         for i, (layer_module, past_key_value) in enumerate(zip(self.block, past_key_values)):
             layer_head_mask = head_mask[i]
@@ -430,36 +480,23 @@ class T5Stack(T5PreTrainedModel):
                     encoder_hidden_states=encoder_hidden_states,
                     encoder_attention_mask=encoder_extended_attention_mask,
                     encoder_decoder_position_bias=encoder_decoder_position_bias,
-                    layer_head_mask=layer_head_mask,
-                    cross_attn_layer_head_mask=cross_attn_layer_head_mask,
-                    past_key_value=past_key_value,
+                    past_key_values=past_key_value,
                     use_cache=use_cache,
                     output_attentions=output_attentions,
+                    cache_position=cache_position,
                 )
 
-            # layer_outputs is a tuple with:
-            # hidden-states, key-value-states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
-            if use_cache is False:
-                layer_outputs = layer_outputs[:1] + (None,) + layer_outputs[1:]
+            # Unpack layer outputs.
+            # Newer transformers (4.44+) returns: (hidden_states, self_attn_position_bias, [cross_attn_position_bias])
+            # Older transformers returned: (hidden_states, present_kv, position_bias, ...)
+            hidden_states = layer_outputs[0]
+            present_key_value_state = None  # Cache handled internally by transformers 4.44+
 
-            hidden_states, present_key_value_state = layer_outputs[:2]
-
-            # We share the position biases between the layers - the first layer store them
-            # layer_outputs = hidden-states, key-value-states (self-attention position bias), (self-attention weights),
-            # (cross-attention position bias), (cross-attention weights)
-            position_bias = layer_outputs[2]
-            if self.is_decoder and encoder_hidden_states is not None:
-                encoder_decoder_position_bias = layer_outputs[4 if output_attentions else 3]
-            # append next layer key value states
-            if use_cache:
-                present_key_value_states = present_key_value_states + \
-                    (present_key_value_state,)
-
-            if output_attentions:
-                all_attentions = all_attentions + (layer_outputs[3],)
-                if self.is_decoder:
-                    all_cross_attentions = all_cross_attentions + \
-                        (layer_outputs[5],)
+            # Position bias is at index 1 (self-attention) and index 2 (cross-attention, if decoder)
+            if len(layer_outputs) > 1:
+                position_bias = layer_outputs[1]
+            if self.is_decoder and encoder_hidden_states is not None and len(layer_outputs) > 2:
+                encoder_decoder_position_bias = layer_outputs[2]
 
         hidden_states = self.final_layer_norm(hidden_states)
         hidden_states = self.dropout(hidden_states)

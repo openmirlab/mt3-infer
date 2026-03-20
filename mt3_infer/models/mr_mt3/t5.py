@@ -393,6 +393,12 @@ class T5Stack(T5PreTrainedModel):
     def set_input_embeddings(self, new_embeddings):
         self.embed_tokens = new_embeddings
 
+    def get_head_mask(self, head_mask, num_layers):
+        """Compatibility shim for transformers v5 which removed this method."""
+        if head_mask is None:
+            return [None] * num_layers
+        return head_mask
+
     def forward(
         self,
         input_ids=None,
@@ -454,7 +460,7 @@ class T5Stack(T5PreTrainedModel):
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
         extended_attention_mask = self.get_extended_attention_mask(
-            attention_mask, input_shape, inputs_embeds.device)
+            attention_mask, input_shape)
 
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]
@@ -535,8 +541,6 @@ class T5Stack(T5PreTrainedModel):
                     encoder_hidden_states=encoder_hidden_states,
                     encoder_attention_mask=encoder_extended_attention_mask,
                     encoder_decoder_position_bias=encoder_decoder_position_bias,
-                    layer_head_mask=layer_head_mask,
-                    cross_attn_layer_head_mask=cross_attn_layer_head_mask,
                     past_key_values=past_key_value,
                     use_cache=use_cache,
                     output_attentions=output_attentions,
@@ -545,29 +549,15 @@ class T5Stack(T5PreTrainedModel):
 
             # layer_outputs is a tuple with:
             # hidden-states, key-value-states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
-            if use_cache is False:
-                layer_outputs = layer_outputs[:1] + (None,) + layer_outputs[1:]
+            # Unpack layer outputs.
+            # Newer transformers (4.44+) returns: (hidden_states, self_attn_position_bias, [cross_attn_position_bias])
+            hidden_states = layer_outputs[0]
+            present_key_value_state = None  # Cache handled internally by transformers 4.44+
 
-            hidden_states, present_key_value_state = layer_outputs[:2]
-            # if self.name == "decoder":
-            #     print(self.name, 'in loop', i, hidden_states[0][0][:5])
-
-            # We share the position biases between the layers - the first layer store them
-            # layer_outputs = hidden-states, key-value-states (self-attention position bias), (self-attention weights),
-            # (cross-attention position bias), (cross-attention weights)
-            position_bias = layer_outputs[2]
-            if self.is_decoder and encoder_hidden_states is not None:
-                encoder_decoder_position_bias = layer_outputs[4 if output_attentions else 3]
-            # append next layer key value states
-            if use_cache:
-                present_key_value_states = present_key_value_states + \
-                    (present_key_value_state,)
-
-            if output_attentions:
-                all_attentions = all_attentions + (layer_outputs[3],)
-                if self.is_decoder:
-                    all_cross_attentions = all_cross_attentions + \
-                        (layer_outputs[5],)
+            if len(layer_outputs) > 1:
+                position_bias = layer_outputs[1]
+            if self.is_decoder and encoder_hidden_states is not None and len(layer_outputs) > 2:
+                encoder_decoder_position_bias = layer_outputs[2]
 
         hidden_states = self.final_layer_norm(hidden_states)
         # torch.manual_seed(365)
