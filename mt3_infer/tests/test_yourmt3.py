@@ -1,21 +1,25 @@
 """
 Smoke tests for the YourMT3 adapter and registry wiring.
 
-Importing YourMT3Adapter itself does not require pytorch_lightning (that
-import is deferred until load_model() actually loads a checkpoint via
-mt3_infer.models.yourmt3.inference_loader), so these tests run in the base
-dev environment without the `full` extra. End-to-end inference is covered
-by the manual baseline scripts used during the ADOPT campaign, since it
-needs the ~536MB checkpoint and (currently) the `full` extra installed.
+YourMT3 no longer depends on pytorch_lightning/lightning at all (see
+model/lightning_shim.py) -- these tests run in the base dev environment
+without the `full` extra. End-to-end inference is covered by the manual
+baseline scripts used during the ADOPT campaign, since it needs the ~536MB
+checkpoint.
 """
 
 import importlib
+import sys
+
+import torch
 
 from mt3_infer.adapters import YourMT3Adapter
 from mt3_infer.adapters.yourmt3 import YourMT3Adapter as YourMT3AdapterDirect
 from mt3_infer.api import _load_registry
 from mt3_infer.base import MT3Base
 from mt3_infer.exceptions import ModelNotFoundError
+from mt3_infer.models.yourmt3.model.lightning_shim import LightningModuleShim
+from mt3_infer.models.yourmt3.inference_loader import _checkpoint_unpickling_module_alias
 
 
 def test_yourmt3_adapter_exported_from_adapters_package():
@@ -78,3 +82,61 @@ def test_yourmt3_adapter_has_required_interface():
 def test_yourmt3_alias_resolves_to_multitask():
     registry = _load_registry()
     assert registry["aliases"]["multitask"] == "yourmt3"
+
+
+def test_yourmt3_does_not_import_pytorch_lightning():
+    """YourMT3 must not need pytorch_lightning/lightning at all anymore."""
+    assert "pytorch_lightning" not in sys.modules
+    assert "lightning" not in sys.modules
+
+
+class TestLightningModuleShim:
+    """LightningModuleShim replaces pl.LightningModule as YourMT3's base class.
+
+    Device semantics intentionally mirror
+    lightning_fabric.utilities.device_dtype_mixin._DeviceDtypeModuleMixin:
+    `.device` starts at CPU and only changes via `.to()`/`.cuda()`/`.cpu()`.
+    """
+
+    def test_device_defaults_to_cpu(self):
+        shim = LightningModuleShim()
+        assert shim.device == torch.device("cpu")
+
+    def test_device_updates_after_to(self):
+        shim = LightningModuleShim()
+        shim.to("cpu")  # no-op move, but exercises the .to() override
+        assert shim.device == torch.device("cpu")
+
+    def test_is_nn_module(self):
+        import torch.nn as nn
+
+        assert isinstance(LightningModuleShim(), nn.Module)
+
+
+def test_checkpoint_module_alias_is_scoped_and_restored():
+    """The 'utils' sys.modules alias used for unpickling old checkpoints must
+    not leak into the rest of the process -- verifies the P3 sys.modules
+    surgery (previously a permanent, process-wide hijack) actually scopes
+    cleanly and restores whatever was there before (including nothing)."""
+    assert "utils" not in sys.modules
+
+    with _checkpoint_unpickling_module_alias():
+        assert "utils" in sys.modules
+        import mt3_infer.models.yourmt3.utils as expected
+
+        assert sys.modules["utils"] is expected
+
+    assert "utils" not in sys.modules
+
+
+def test_checkpoint_module_alias_restores_previous_module():
+    """If some unrelated top-level `utils` module already existed, it must be
+    restored afterward rather than deleted."""
+    sentinel = object()
+    sys.modules["utils"] = sentinel
+    try:
+        with _checkpoint_unpickling_module_alias():
+            assert sys.modules["utils"] is not sentinel
+        assert sys.modules["utils"] is sentinel
+    finally:
+        sys.modules.pop("utils", None)

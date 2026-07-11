@@ -259,7 +259,7 @@ class YourMT3(LightningModuleShim):
         # Output MIDI
         if write_output_dir is not None:
             if write_output_vocab is None:
-                from config.vocabulary import program_vocab_presets
+                from mt3_infer.models.yourmt3.config.vocabulary import program_vocab_presets
                 self.midi_output_vocab = program_vocab_presets["gm_ext_plus"]
             else:
                 self.midi_output_vocab = write_output_vocab
