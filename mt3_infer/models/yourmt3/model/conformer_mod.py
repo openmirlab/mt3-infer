@@ -7,6 +7,14 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Please see the details in the LICENSE file.
+"""conformer_mod.py -- Conformer encoder variant for YourMT3.
+
+ConformerYMT3Encoder: a convolution-augmented Transformer encoder, one of
+the three encoder_type options ("t5", "perceiver-tf", "conformer") that
+model/ymt3.py's YourMT3.set_encoder_decoder() picks between based on model_cfg.
+
+Reads: model/conformer_helper.py (ConformerYMT3Config), model/positional_encoding.py.
+"""
 from typing import Tuple, Literal, Any, Optional
 import math
 

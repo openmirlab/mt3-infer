@@ -19,7 +19,7 @@ This module contains the implementation of the feedforward layers.
             https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/mixtral/modeling_mixtral.py
 
     Usage:
-        from model.ff_layer import get_ff_layer
+        from mt3_infer.models.yourmt3.model.ff_layer import get_ff_layer
 
         config = PerceiverTFConfig() # or any type of PretrainedConfig()
         config.ff_layer_type = 'moe' # or 'mlp'
@@ -33,7 +33,8 @@ This module contains the implementation of the feedforward layers.
         - It returns (hidden_states, router_logits) for MoE and (hidden_states, None) for MLP.
         - router_logits has the shape of (batch_size * sequence_length, n_experts) for MoE.
 
-   
+Reads: model/perceiver_helper.py (PerceiverTFConfig). Used by model/t5mod.py
+and model/perceiver_mod.py wherever config.ff_layer_type selects a feedforward.
 """
 from typing import Any, Tuple
 import torch

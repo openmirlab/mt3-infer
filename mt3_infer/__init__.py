@@ -1,8 +1,12 @@
 """
 MT3-Infer: Unified inference-only toolkit for the MT3 model family.
 
-This package provides a clean, framework-neutral API for running music transcription
-inference across multiple MT3 implementations (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3).
+This package provides a clean, framework-neutral API for running music
+transcription inference across multiple MT3 implementations (MR-MT3,
+MT3-PyTorch, YourMT3 -- Magenta MT3 is deferred, not currently vendored;
+see root LICENSE). Entry points: transcribe()/load_model() in api.py.
+
+Reads: base.py (MT3Base), exceptions.py, api.py.
 """
 
 from mt3_infer.__about__ import __version__

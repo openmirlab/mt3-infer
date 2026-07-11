@@ -1,9 +1,15 @@
 """
 Inference-only model loader for YourMT3.
 
-This module provides a simplified loader that bypasses the training infrastructure
-(initialize_trainer, update_config, etc.) and directly loads PyTorch Lightning
-checkpoints for inference.
+Bypasses the training infrastructure (initialize_trainer, update_config,
+etc.) and directly loads a YourMT3 checkpoint for inference: torch.load()s
+the pytorch_lightning-shaped .ckpt, builds a YourMT3 from its
+hyper_parameters, and loads the state_dict.
+_checkpoint_unpickling_module_alias() below handles the one remaining
+wrinkle -- old checkpoints unpickle a `utils.task_manager.TaskManager` by
+that pre-refactor module path.
+
+Reads: model/ymt3.py, utils/task_manager.py.
 """
 
 import contextlib

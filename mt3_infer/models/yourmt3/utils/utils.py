@@ -7,6 +7,17 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Please see the details in the LICENSE file.
+"""utils.py -- grab-bag of YourMT3 inference/IO helpers.
+
+Checksum/download helpers, MIDI-vocab construction (create_inverse_vocab,
+used by inference_loader.py and adapters/yourmt3.py), MIDI-writing
+(write_model_output_as_midi, used by adapters/yourmt3.py's decode()), a
+Timer context manager, and dict/split-list utilities left over from the
+training/dataset-prep tooling.
+
+Reads: utils/note_event_dataclasses.py, utils/note2event.py, utils/midi.py,
+utils/event2note.py, utils/tokenizer.py, config/vocabulary.py, config/config.py.
+"""
 import os
 import json
 import time

@@ -7,7 +7,18 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Please see the details in the LICENSE file.
-"""ymt3.py"""
+"""YourMT3 model: multi-task music transcription Transformer.
+
+Defines the YourMT3 nn.Module (spectrogram frontend -> pre-encoder ->
+T5/PerceiverTF/Conformer encoder -> T5/multi-T5 decoder -> LM head, per
+model_cfg) and its forward/inference/inference_file methods.
+inference_loader.py loads a checkpoint's state_dict into this class;
+adapters/yourmt3.py drives inference_file() for transcription.
+
+Reads: model/lightning_shim.py (base class), model/t5mod.py,
+model/perceiver_mod.py, model/conformer_mod.py, config/config.py,
+utils/task_manager.py.
+"""
 import os
 from typing import Union, Optional, Tuple, Dict, List, Any
 from collections import Counter

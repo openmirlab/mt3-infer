@@ -2,6 +2,75 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **YourMT3 no longer depends on pytorch_lightning/lightning at runtime.** Its
+  model class (`YourMT3`) now extends a vendored `LightningModuleShim`
+  (`mt3_infer/models/yourmt3/model/lightning_shim.py`, ~55 lines) instead of
+  `pl.LightningModule` -- inference only ever needed the `nn.Module` contract
+  and a `.device` property, both of which the shim provides with identical
+  semantics. Removed `lightning>=2.3.0` from the `full` extra accordingly;
+  `matplotlib`, `pyloudnorm`, and `pyrubberband` remain (the latter is used by
+  YourMT3's adaptive-transcription mode).
+- **Checkpoint-unpickling module aliasing is now scoped, not global.**
+  Loading a YourMT3 checkpoint used to permanently alias five top-level
+  module names (`utils`, `model`, `config`, `config.vocabulary`,
+  `utils.task_manager`) in `sys.modules` for the lifetime of the process, as
+  soon as the loader module was imported. Only `utils` is actually needed
+  (verified against the real checkpoint), and it's now aliased only around
+  the single `torch.load()` call that needs it, then restored.
+- Package version is now single-sourced: `mt3_infer/__about__.py` is the one
+  place `__version__` lives; `pyproject.toml` reads it via
+  `[tool.hatch.version]` and `mt3_infer/__init__.py` imports it.
+- `MT3PyTorchAdapter` is now exported from `mt3_infer.adapters` (previously
+  only reachable via `mt3_infer.adapters.mt3_pytorch`).
+
+### Fixed
+- `adapters/yourmt3.py`'s `load_model()` no longer wraps a missing-dependency
+  `ModuleNotFoundError` as a misleading `CheckpointError` ("your checkpoint is
+  bad") -- it now raises `FrameworkError` with an actionable message,
+  matching the existing convention in `adapters/mt3_pytorch.py`.
+- Corrected `mt3-pytorch`'s attribution across LICENSE, adapter docstrings,
+  and `config/external_integrations.yaml`: it was citing
+  `github.com/rlax59us/MT3-pytorch` with "License: To be verified"/"Apache
+  2.0 (compatible...)", but the code has always used
+  `github.com/kunato/mt3-pytorch`, which has no license declared upstream.
+  The vendored code itself is unchanged; only the (previously false)
+  attribution is fixed.
+- Removed the root LICENSE's credit for a vendored Magenta MT3 that doesn't
+  exist anywhere in this repo, and fixed stale `mt3_infer/vendor/yourmt3/`
+  path references (actual location: `mt3_infer/models/yourmt3/`).
+- Recorded verified SHA-256 checksums for all three checkpoints in
+  `checkpoints.yaml` (mr_mt3's is enforced at download time; mt3_pytorch's
+  and yourmt3's are recorded for provenance -- the git-lfs download path
+  doesn't verify checksums yet). Added a `network`-marked liveness test for
+  each checkpoint's download source (excluded from the default test run).
+
+### Removed
+- ~6,700 LOC of orphaned YourMT3 dataset/eval/preprocessing code with zero
+  reachable importers from the public API: `utils/datasets_eval.py`,
+  `utils/datasets_helper.py`, `utils/metrics.py`, `utils/metrics_helper.py`,
+  `utils/mirdata_dev/`, `utils/preprocess/` (19 files), plus the now-dead
+  `note_event2token2note_event_sanity_check()` in `utils/utils.py` and four
+  unreachable embedded `test()` functions in `model/perceiver_mod.py`,
+  `model/t5mod.py`, `model/ff_layer.py`, `model/conformer_mod.py`.
+- `mt3_infer/models/mt3_pytorch/contrib/preprocessor.py`: dead, un-importable
+  (missing `immutabledict`/`note_seq` deps) with zero importers. Deleting a
+  dead file is not a modification of the license-frozen `models/mt3_pytorch/`
+  tree -- everything else under that tree is untouched.
+
+### Testing
+- Added a CI test workflow (`.github/workflows/test.yml`) and a `test` job
+  gating `publish` in `.github/workflows/publish.yml` -- previously no CI job
+  ran the test suite at all.
+- Filled the two empty test stub files (`test_mr_mt3.py`, `test_mt3_pytorch.py`)
+  and added `test_yourmt3.py` and `test_checkpoint_registry.py`.
+- mr_mt3, mt3_pytorch, and yourmt3 were each baselined end-to-end (exact MIDI
+  event equality, verified via sha256 of the extracted note events) before
+  and after every change in this pass; all three remained byte-identical
+  throughout.
+
 ## [0.1.3] - 2026-01-14
 
 ### Added

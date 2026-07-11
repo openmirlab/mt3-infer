@@ -13,6 +13,11 @@
     - AliBi positional bias
     - Mixtral of Experts (MoE) feedforward layer
 
+    PerceiverTFEncoder is one of the three encoder_type options
+    ("t5", "perceiver-tf", "conformer") model/ymt3.py's
+    YourMT3.set_encoder_decoder() picks between based on model_cfg.
+
+Reads: model/perceiver_helper.py (PerceiverTFConfig), model/ff_layer.py.
 """
 import math
 from einops import rearrange

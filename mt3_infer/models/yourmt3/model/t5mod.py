@@ -21,6 +21,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""t5mod.py -- YMT3's T5 variants, adapted from HuggingFace's modeling_t5.py.
+
+T5EncoderYMT3, T5DecoderYMT3, and MultiChannelT5Decoder (single- and
+multi-channel decoding, e.g. for the 8-stem YPTF.MoE+Multi checkpoint) --
+the "t5"/"multi-t5" encoder_type/decoder_type options model/ymt3.py's
+YourMT3.set_encoder_decoder() picks between based on model_cfg.
+
+Reads: model/ff_layer.py, model/positional_encoding.py, model/ops.py.
+"""
 import copy
 from typing import Optional, Tuple, Union, Dict
 from einops import rearrange

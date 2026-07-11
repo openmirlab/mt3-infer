@@ -13,6 +13,8 @@ The `.device` semantics below intentionally mirror
 `lightning_fabric.utilities.device_dtype_mixin._DeviceDtypeModuleMixin` (Apache-2.0)
 so behavior is unchanged: `_device` starts at CPU and is only updated by `.to()`,
 `.cuda()`, or `.cpu()` -- it does not introspect actual parameter/buffer devices.
+
+Read by: model/ymt3.py (YourMT3's base class).
 """
 from typing import Any, Optional, Union
 
