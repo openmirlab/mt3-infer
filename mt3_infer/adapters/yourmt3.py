@@ -1,15 +1,18 @@
 """
 YourMT3 Adapter for MT3-Infer
 
-Minimal inference-only adapter for YourMT3 (PyTorch + Lightning).
+Minimal inference-only adapter for YourMT3 (PyTorch).
 Uses vendored YourMT3 code for self-contained distribution.
 
 Original Authors: Taegyun Kwon, et al.
 Original Repository: https://huggingface.co/spaces/mimbres/YourMT3
 License: Apache 2.0
 
-This adapter vendors the YourMT3 code in mt3_infer/vendor/yourmt3/
-for easy installation via PyPI/uv without external dependencies.
+This adapter vendors the YourMT3 code in mt3_infer/models/yourmt3/
+for easy installation via PyPI/uv without external dependencies. It uses a
+vendored LightningModuleShim (models/yourmt3/model/lightning_shim.py)
+instead of pytorch_lightning.LightningModule, so no Lightning runtime
+dependency is needed for inference.
 """
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union

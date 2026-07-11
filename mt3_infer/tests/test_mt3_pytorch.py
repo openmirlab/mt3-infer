@@ -5,18 +5,23 @@ These do not load checkpoints or run inference (that is covered by the
 manual baseline scripts used during the ADOPT campaign) -- they verify the
 adapter is importable, registered correctly, and satisfies the MT3Base
 interface, so a broken import or registry entry fails fast in CI.
-
-Note: as of this writing, MT3PyTorchAdapter is NOT yet exported from
-mt3_infer.adapters (only mt3_infer.adapters.mt3_pytorch) -- see the ADOPT
-campaign's misc-fixes phase, which adds that export. This test file imports
-from the submodule directly so it passes both before and after that fix.
 """
 
 import importlib
 
-from mt3_infer.adapters.mt3_pytorch import MT3PyTorchAdapter
+from mt3_infer.adapters import MT3PyTorchAdapter
+from mt3_infer.adapters.mt3_pytorch import MT3PyTorchAdapter as MT3PyTorchAdapterDirect
 from mt3_infer.api import _load_registry
 from mt3_infer.base import MT3Base
+
+
+def test_mt3_pytorch_adapter_exported_from_adapters_package():
+    """MT3PyTorchAdapter must be importable from mt3_infer.adapters (public surface).
+
+    It was previously only importable from mt3_infer.adapters.mt3_pytorch --
+    the only one of the three adapters missing from the package's __all__.
+    """
+    assert MT3PyTorchAdapter is MT3PyTorchAdapterDirect
 
 
 def test_mt3_pytorch_adapter_is_mt3base_subclass():

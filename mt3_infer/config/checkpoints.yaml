@@ -15,6 +15,8 @@ models:
       download:
         source_type: "url"
         source_url: "https://huggingface.co/gudgud1014/MR-MT3/resolve/main/mt3.pth"
+        # Verified 2026-07-11 by downloading fresh from source_url and hashing.
+        sha256: "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f"
     metadata:
       vocab_size: 388
       max_seq_len: 1024
@@ -45,6 +47,16 @@ models:
         branch: "master"
         depth: 1
         target_path: "pretrained"
+        # Verified 2026-07-11 via a fresh `git lfs pull` of pretrained/mt3.pth
+        # from source_url. NOTE: not currently enforced at download time --
+        # clone_git_lfs_repo() (utils/download.py) doesn't verify checksums
+        # after cloning, unlike the `url` download path. Recorded here for
+        # provenance/audit; wiring verification into the git_lfs path is a
+        # separate, larger change than this campaign's "record where feasible."
+        # Surprise: this hash is IDENTICAL to mr_mt3's sha256 above -- verified
+        # independently against both live sources, not a caching bug. The two
+        # upstream projects apparently ship the same underlying checkpoint.
+        sha256: "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f"
     metadata:
       vocab_size: 1536
       max_seq_len: 1024
@@ -64,15 +76,20 @@ models:
   yourmt3:
     name: "YourMT3"
     description: "Advanced multi-task MT3 with 8-stem separation (Perceiver-TF + MoE)"
-    framework: "pytorch_lightning"
+    framework: "pytorch"  # no longer needs pytorch_lightning/lightning at runtime (see LightningModuleShim)
     adapter_class: "mt3_infer.adapters.yourmt3.YourMT3Adapter"
     checkpoint:
       path: ".mt3_checkpoints/yourmt3/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/last.ckpt"
       size_mb: 536.0
-      format: "pytorch_lightning"
+      format: "pytorch_lightning"  # the .ckpt file itself is still Lightning-shaped (hyper_parameters, callbacks, etc.); only the runtime dependency was removed
       download:
         source_type: "git_lfs"
         source_url: "https://huggingface.co/spaces/mimbres/YourMT3"
+        # Verified 2026-07-11 via a fresh `git lfs pull` of the checkpoint from
+        # source_url. Same caveat as mt3_pytorch above: git_lfs downloads
+        # aren't checksum-verified at download time yet, recorded for
+        # provenance only.
+        sha256: "ae38e415c79efd5592dcb9b658cdb99ddb11d4c4e1eaa364cab04a052473fc25"
         branch: "main"
         depth: 1
         target_path: "amt/logs/2024/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/checkpoints/last.ckpt"

@@ -24,22 +24,26 @@ SOFTWARE.
 
 This project includes code adapted from the following sources:
 
-1. Magenta MT3 (https://github.com/magenta/mt3)
-   License: Apache-2.0
-   Copyright: 2024 The MT3 Authors (Google Research)
-   Note: Magenta MT3 code is vendored in mt3_infer/vendor/magenta_mt3/
-
-2. MR-MT3 (https://github.com/gudgud96/MR-MT3)
+1. MR-MT3 (https://github.com/gudgud96/MR-MT3)
    License: MIT
    Copyright (c) 2024 Hao Hao Tan, Kin Wai Cheuk, Taemin Cho, Wei-Hsiang Liao, Yuki Mitsufuji
+   Note: vendored in mt3_infer/models/mr_mt3/
 
-3. MT3-PyTorch (https://github.com/rlax59us/MT3-pytorch)
-   License: To be verified
+2. MT3-PyTorch (https://github.com/kunato/mt3-pytorch)
+   License: No license declared upstream. Vendored code is retained
+   unmodified; see mt3_infer/models/mt3_pytorch/. (Previously misattributed
+   here to https://github.com/rlax59us/MT3-pytorch, which is not the
+   repository the vendored code and adapter actually derive from -- the
+   code and mt3_infer/adapters/mt3_pytorch.py have always cited kunato.)
 
-4. YourMT3 (https://huggingface.co/spaces/mimbres/YourMT3)
+3. YourMT3 (https://huggingface.co/spaces/mimbres/YourMT3)
    License: Apache-2.0
    Copyright: 2024 The YourMT3 Authors
-   Note: YourMT3 code is vendored in mt3_infer/vendor/yourmt3/
+   Note: vendored in mt3_infer/models/yourmt3/
 
-See mt3_infer/vendor/magenta_mt3/LICENSE and mt3_infer/vendor/yourmt3/LICENSE
-for the full Apache-2.0 license text.
+Magenta MT3 (https://github.com/magenta/mt3, Apache-2.0, Google Research) is
+NOT currently vendored anywhere in this repository -- a prior version of
+this file credited it as such; that was inaccurate and has been removed.
+Support for it is deferred (see pyproject.toml's commented-out `jax` extra).
+
+See mt3_infer/models/yourmt3/LICENSE for the full Apache-2.0 license text.
