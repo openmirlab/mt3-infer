@@ -11,8 +11,13 @@ Architecture:
 - Event codec for MIDI transcription
 
 Repository: https://github.com/kunato/mt3-pytorch
-License: Apache 2.0 (compatible with mt3-infer MIT license)
-Model implementation: mt3_infer/models/mt3_pytorch/
+License: No license declared upstream. Vendored code is retained unmodified;
+         see LICENSE at the repo root and mt3_infer/models/mt3_pytorch/.
+Model implementation: mt3_infer/models/mt3_pytorch/ (vendored, license-frozen:
+not refactored or restructured by this adapter or any campaign touching it).
+
+Reads: models/mt3_pytorch/t5.py, models/mt3_pytorch/contrib/. Implements the
+base.py MT3Base interface (preprocess/forward/decode/transcribe).
 """
 
 import json

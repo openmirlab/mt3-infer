@@ -21,6 +21,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""t5mod.py -- YMT3's T5 variants, adapted from HuggingFace's modeling_t5.py.
+
+T5EncoderYMT3, T5DecoderYMT3, and MultiChannelT5Decoder (single- and
+multi-channel decoding, e.g. for the 8-stem YPTF.MoE+Multi checkpoint) --
+the "t5"/"multi-t5" encoder_type/decoder_type options model/ymt3.py's
+YourMT3.set_encoder_decoder() picks between based on model_cfg.
+
+Reads: model/ff_layer.py, model/positional_encoding.py, model/ops.py.
+"""
 import copy
 from typing import Optional, Tuple, Union, Dict
 from einops import rearrange
@@ -667,21 +676,3 @@ class MultiChannelT5Decoder(T5PreTrainedModel):
         else:
             return decoder_outputs  # ['last_hidden_state']: (B, K, T, D)
 
-
-def test_multi_channel_t5_decoder():
-    # Test multi-channel decoder
-    config = T5Config()
-    config.num_channels = 4
-    config.d_model = 32
-    config.num_layers = 2
-    config.num_heads = 2
-    config.num_max_positions = 64  # for positional encoding
-
-    decoder = MultiChannelT5Decoder(decoder_config=None, config=config)
-    decoder.eval()
-
-    input_emb = torch.rand(2, 4, 64, 32)  # (B, K, T, D)
-    enc_hs = torch.rand(2, 4, 64, 32)  # (B, K, T, D)
-    out = decoder(inputs_embeds=input_emb, encoder_hidden_states=enc_hs, return_dict=True)
-    # out['last_hidden_state']: (B, K, T, D)
-    # out['past_key_values']: Tuple[Tuple[torch.Tensor]]

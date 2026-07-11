@@ -7,7 +7,18 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Please see the details in the LICENSE file.
-"""ymt3.py"""
+"""YourMT3 model: multi-task music transcription Transformer.
+
+Defines the YourMT3 nn.Module (spectrogram frontend -> pre-encoder ->
+T5/PerceiverTF/Conformer encoder -> T5/multi-T5 decoder -> LM head, per
+model_cfg) and its forward/inference/inference_file methods.
+inference_loader.py loads a checkpoint's state_dict into this class;
+adapters/yourmt3.py drives inference_file() for transcription.
+
+Reads: model/lightning_shim.py (base class), model/t5mod.py,
+model/perceiver_mod.py, model/conformer_mod.py, config/config.py,
+utils/task_manager.py.
+"""
 import os
 from typing import Union, Optional, Tuple, Dict, List, Any
 from collections import Counter
@@ -16,9 +27,10 @@ import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 import torchaudio  # for debugging audio
-import pytorch_lightning as pl
 import numpy as np
 from einops import rearrange
+
+from mt3_infer.models.yourmt3.model.lightning_shim import LightningModuleShim
 
 from transformers import T5Config
 from mt3_infer.models.yourmt3.model.t5mod import T5EncoderYMT3, T5DecoderYMT3, MultiChannelT5Decoder
@@ -38,7 +50,7 @@ from mt3_infer.models.yourmt3.model.projection_layer import get_projection_layer
 from mt3_infer.models.yourmt3.utils.note_event_dataclasses import Note
 from mt3_infer.models.yourmt3.utils.note2event import mix_notes
 from mt3_infer.models.yourmt3.utils.event2note import merge_zipped_note_events_and_ties_to_notes, DECODING_ERR_TYPES
-from mt3_infer.models.yourmt3.utils.metrics import compute_track_metrics
+# Removed compute_track_metrics import - unused (training/eval-only, see utils/metrics.py removal)
 # Removed AMTMetrics import - training-only, not needed for inference
 # from utils.utils import write_model_output_as_npy
 from mt3_infer.models.yourmt3.utils.utils import write_model_output_as_midi, create_inverse_vocab, write_err_cnt_as_json
@@ -51,11 +63,13 @@ from mt3_infer.models.yourmt3.config.config import shared_cfg as default_shared_
 from mt3_infer.models.yourmt3.config.config import T5_BASE_CFG
 
 
-class YourMT3(pl.LightningModule):
+class YourMT3(LightningModuleShim):
     """YourMT3:
-    
-    Lightning wrapper for multi-task music transcription Transformer.
-    
+
+    Multi-task music transcription Transformer. Previously a
+    pytorch_lightning.LightningModule; now uses LightningModuleShim (see
+    lightning_shim.py), a ~50-line vendored replacement providing only the
+    nn.Module contract and `.device` tracking that inference actually needs.
     """
 
     def __init__(
@@ -256,7 +270,7 @@ class YourMT3(pl.LightningModule):
         # Output MIDI
         if write_output_dir is not None:
             if write_output_vocab is None:
-                from config.vocabulary import program_vocab_presets
+                from mt3_infer.models.yourmt3.config.vocabulary import program_vocab_presets
                 self.midi_output_vocab = program_vocab_presets["gm_ext_plus"]
             else:
                 self.midi_output_vocab = write_output_vocab
@@ -472,12 +486,14 @@ class YourMT3(pl.LightningModule):
             else:
                 loss = None
 
-        if self.test_pitch_shift_layer is not None:  # debug only
-            if self.hparams.write_output_dir is not None:
-                x_ps_concat = torch.cat(x_ps_concat, dim=0)
-                return pred_token_array_file, loss, x_ps_concat.flatten().unsqueeze(0)
-        else:
-            return pred_token_array_file, loss
+        # NOTE: this used to also gate on `self.hparams.write_output_dir`, which
+        # required pl.LightningModule's save_hyperparameters() -- never called
+        # in this inference-only build, so that branch already raised
+        # AttributeError whenever reached. test_pitch_shift_layer is a debug-only
+        # constructor arg never set to non-None by any current caller (inference
+        # loader, adapter), so this was unreachable dead code; the only path that
+        # ever actually executes is the plain return below.
+        return pred_token_array_file, loss
 
     # Removed training_step() - training-only, not needed for inference
     # Removed validation_step() - training-only, not needed for inference

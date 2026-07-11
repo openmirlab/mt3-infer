@@ -1,6 +1,6 @@
 [project]
 name = "mt3-infer"
-version = "0.1.3"
+dynamic = ["version"]
 description = "Unified, inference-only toolkit for MT3 model family (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -46,8 +46,11 @@ dependencies = [
 
 [project.optional-dependencies]
 # Full dependencies (includes all optional features)
+# NOTE: `lightning` was removed here as part of the ADOPT campaign -- YourMT3
+# (mt3_infer/models/yourmt3/) now uses a vendored LightningModuleShim
+# (model/lightning_shim.py) instead of pytorch_lightning.LightningModule, so
+# no backend needs the Lightning/torchmetrics stack for inference anymore.
 full = [
-    "lightning>=2.3.0",
     "matplotlib>=3.8.0",
     "pyloudnorm>=0.1.1",
     "pyrubberband>=0.4.0",
@@ -115,6 +118,9 @@ Issues = "https://github.com/openmirlab/mt3-infer/issues"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "mt3_infer/__about__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["mt3_infer"]
 
@@ -131,9 +137,13 @@ testpaths = ["mt3_infer/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "network: requires internet access (checkpoint URL/repo liveness checks); excluded by default, run with -m network",
+]
 addopts = [
     "-v",
     "--strict-markers",
+    "-m", "not network",
     "--cov=mt3_infer",
     "--cov-report=term-missing",
     "--cov-report=html",

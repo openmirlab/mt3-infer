@@ -19,7 +19,7 @@ This module contains the implementation of the feedforward layers.
             https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/mixtral/modeling_mixtral.py
 
     Usage:
-        from model.ff_layer import get_ff_layer
+        from mt3_infer.models.yourmt3.model.ff_layer import get_ff_layer
 
         config = PerceiverTFConfig() # or any type of PretrainedConfig()
         config.ff_layer_type = 'moe' # or 'mlp'
@@ -33,7 +33,8 @@ This module contains the implementation of the feedforward layers.
         - It returns (hidden_states, router_logits) for MoE and (hidden_states, None) for MLP.
         - router_logits has the shape of (batch_size * sequence_length, n_experts) for MoE.
 
-   
+Reads: model/perceiver_helper.py (PerceiverTFConfig). Used by model/t5mod.py
+and model/perceiver_mod.py wherever config.ff_layer_type selects a feedforward.
 """
 from typing import Any, Tuple
 import torch
@@ -203,36 +204,3 @@ def get_ff_layer(config: PretrainedConfig, input_size: int, widening_factor: int
         raise ValueError(
             f"Unsupported ff_layer_type: {config.ff_layer_type}. Supported types are 'moe', 'mlp' and 'gmlp'.")
 
-
-def test_get_ff_layer():
-    from model.ff_layer import get_ff_layer
-    from model.perceiver_helper import PerceiverTFConfig
-    input_size = 32
-    widening_factor = 1
-
-    # Test for MoE
-    config = PerceiverTFConfig()  # or any type of PretrainedConfig()
-    config.ff_layer_type = 'moe'
-    config.moe_num_experts = 4
-    config.moe_topk = 2
-    config.hidden_act = 'silu'
-
-    ff_layer = get_ff_layer(config, input_size, widening_factor)
-    x = torch.rand(2, 8, input_size)
-    hidden_states, router_logits = ff_layer(x)
-    print(hidden_states.shape, router_logits.shape)  # (2, 8, 32), (2*8, 4)
-
-    # Test for MLP
-    config.ff_layer_type = 'mlp'
-    config.hidden_act = 'gelu'
-
-    ff_layer = get_ff_layer(config, input_size, widening_factor)
-    hidden_states, _ = ff_layer(x)
-    print(hidden_states.shape)  # (2, 8, 32)
-
-    # Test for (simple)gMLP
-    config.ff_layer_type = 'gmlp'
-    config.hidden_act = 'silu'
-    ff_layer = get_ff_layer(config, input_size, widening_factor)
-    hidden_states, _ = ff_layer(x)
-    print(hidden_states.shape)  # (2, 8, 32)

@@ -32,11 +32,11 @@ mr_mt3:
     Original checkpoint had Git LFS issues; will obtain checkpoint separately.
 
 mt3_pytorch:
-  source_repo: "https://github.com/rlax59us/MT3-pytorch"
+  source_repo: "https://github.com/kunato/mt3-pytorch"
   commit: "a372ec5a1afc5ec0bbe464a1952a482a173ec2b1"
   commit_message: "Update data_config.py"
-  license: "UNKNOWN - requires verification"
-  license_status: "No LICENSE file found in repository"
+  license: "None declared upstream"
+  license_status: "No LICENSE file in kunato/mt3-pytorch. Vendored code retained unmodified, not modified/redistributed under a different license. Not touched or refactored per project decision (see root LICENSE)."
   migrated_to: "mt3_infer/adapters/mt3_pytorch.py"
   framework_upgrade:
     from: "torch (original version from repo)"
@@ -45,8 +45,10 @@ mt3_pytorch:
   notes: |
     PyTorch port of MT3 model.
     Priority adapter for v0.1.0 release.
-    License needs verification - may need to contact author or assume public domain/permissive.
-    ACTION REQUIRED: Verify license compatibility before production use.
+    Resolved 2026-07: no license was ever found upstream (repo was previously
+    misattributed here to rlax59us/MT3-pytorch, which doesn't match the
+    kunato/mt3-pytorch source the code and adapter actually cite). Decision:
+    keep the vendored code as-is, unmodified, with honest attribution.
 
 yourmt3:
   source_repo: "https://huggingface.co/spaces/mimbres/YourMT3"
@@ -72,12 +74,7 @@ yourmt3:
 # Repositories stored in refs/ directory (gitignored, not part of package distribution).
 #
 # License Compatibility Summary:
-# - Magenta MT3: Apache-2.0 ✅ (permissive, compatible)
-# - MR-MT3: MIT ✅ (permissive, compatible)
-# - MT3-PyTorch: ⚠️ NEEDS VERIFICATION
-# - YourMT3: ⚠️ NEEDS VERIFICATION
-#
-# Next Steps:
-# 1. Verify licenses for MT3-PyTorch and YourMT3
-# 2. Extract inference code from each repository
-# 3. Add attribution headers per SPEC.md §10.1
+# - Magenta MT3: Apache-2.0 (permissive, compatible) -- not currently vendored, deferred
+# - MR-MT3: MIT (permissive, compatible)
+# - MT3-PyTorch: none declared upstream (kunato/mt3-pytorch) -- vendored unmodified, see root LICENSE
+# - YourMT3: Apache-2.0 (permissive, compatible) -- vendored in mt3_infer/models/yourmt3/

@@ -121,7 +121,7 @@ When the variable is set, both the Python API and CLI (including `mt3-infer down
 |-------|-----------|-------|----------------|------|----------|
 | **MR-MT3** | PyTorch | 57x real-time | 116 notes | 176 MB | Optimized for speed |
 | **MT3-PyTorch** | PyTorch | 12x real-time | 147 notes | 176 MB | Official architecture with auto-filtering* |
-| **YourMT3** | PyTorch + Lightning | ~15x real-time | 118 notes | 536 MB | 8-stem separation, Perceiver-TF + MoE |
+| **YourMT3** | PyTorch | ~15x real-time | 118 notes | 536 MB | 8-stem separation, Perceiver-TF + MoE |
 
 *MT3-PyTorch includes automatic instrument leakage filtering (configurable via `auto_filter` parameter)
 

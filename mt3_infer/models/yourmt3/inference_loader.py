@@ -1,33 +1,61 @@
 """
 Inference-only model loader for YourMT3.
 
-This module provides a simplified loader that bypasses the training infrastructure
-(initialize_trainer, update_config, etc.) and directly loads PyTorch Lightning
-checkpoints for inference.
+Bypasses the training infrastructure (initialize_trainer, update_config,
+etc.) and directly loads a YourMT3 checkpoint for inference: torch.load()s
+the pytorch_lightning-shaped .ckpt, builds a YourMT3 from its
+hyper_parameters, and loads the state_dict.
+_checkpoint_unpickling_module_alias() below handles the one remaining
+wrinkle -- old checkpoints unpickle a `utils.task_manager.TaskManager` by
+that pre-refactor module path.
+
+Reads: model/ymt3.py, utils/task_manager.py.
 """
 
+import contextlib
 import sys
 import torch
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Iterator
 
 from mt3_infer.models.yourmt3.model.ymt3 import YourMT3
 from mt3_infer.models.yourmt3.utils.task_manager import TaskManager
 
-# Module aliasing for pickle unpickling compatibility
-# YourMT3 checkpoints were saved with old module paths, so we create aliases
-import mt3_infer.models.yourmt3.utils
-import mt3_infer.models.yourmt3.model
-import mt3_infer.models.yourmt3.config
-import mt3_infer.models.yourmt3.config.vocabulary
-import mt3_infer.models.yourmt3.utils.task_manager
 
-# Temporarily add module aliases for checkpoint loading
-sys.modules['utils'] = mt3_infer.models.yourmt3.utils
-sys.modules['model'] = mt3_infer.models.yourmt3.model
-sys.modules['config'] = mt3_infer.models.yourmt3.config
-sys.modules['config.vocabulary'] = mt3_infer.models.yourmt3.config.vocabulary
-sys.modules['utils.task_manager'] = mt3_infer.models.yourmt3.utils.task_manager
+@contextlib.contextmanager
+def _checkpoint_unpickling_module_alias() -> Iterator[None]:
+    """Temporarily alias 'utils' -> mt3_infer.models.yourmt3.utils for unpickling.
+
+    YourMT3 checkpoints were saved by pytorch_lightning while this codebase's
+    layout was flat (top-level `utils/`, `model/`, `config/` packages, before
+    the `mt3_infer.models.yourmt3` nesting). Their pickled
+    `hyper_parameters['task_manager']` is an instance of the (now relocated)
+    `utils.task_manager.TaskManager` class, so plain
+    `torch.load(..., weights_only=False)` needs `utils` resolvable as a
+    top-level module name purely for that one unpickling call.
+
+    Verified empirically against the real checkpoint (not a pickle-format
+    guess): `utils` is the *only* alias unpickling needs -- `model`, `config`,
+    `config.vocabulary`, and `utils.task_manager` (previously also aliased
+    globally, permanently, for the whole process) turned out to be
+    unnecessary once `utils` itself is resolvable, since Python's import
+    system walks the real `mt3_infer.models.yourmt3.utils` package's
+    `__path__` to find `utils.task_manager` on its own. Scoped here (instead
+    of hijacked at module-import time for the process lifetime) so it can't
+    shadow an unrelated top-level `utils`/`model`/`config` package elsewhere
+    in the same interpreter.
+    """
+    import mt3_infer.models.yourmt3.utils as _utils_pkg
+
+    previous = sys.modules.get('utils')
+    sys.modules['utils'] = _utils_pkg
+    try:
+        yield
+    finally:
+        if previous is None:
+            sys.modules.pop('utils', None)
+        else:
+            sys.modules['utils'] = previous
 
 
 def load_model_for_inference(
@@ -54,10 +82,13 @@ def load_model_for_inference(
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
-    # Load checkpoint
-    # Note: Module aliases are set at module level to handle pickle unpickling
+    # Load checkpoint. weights_only=False is required: YourMT3 checkpoints are
+    # full pytorch_lightning checkpoints (hyper_parameters, callback/loop
+    # state, etc.), not a bare state_dict. The module alias is scoped to just
+    # this call -- see _checkpoint_unpickling_module_alias's docstring.
     print(f"Loading checkpoint from {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    with _checkpoint_unpickling_module_alias():
+        checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
 
     # Extract hyperparameters from checkpoint
     if 'hyper_parameters' in checkpoint:
@@ -92,8 +123,8 @@ def load_model_for_inference(
 
     # Initialize MIDI output vocab if not already set (needed for inference)
     if not hasattr(model, 'midi_output_inverse_vocab'):
-        from config.vocabulary import program_vocab_presets
-        from utils.utils import create_inverse_vocab
+        from mt3_infer.models.yourmt3.config.vocabulary import program_vocab_presets
+        from mt3_infer.models.yourmt3.utils.utils import create_inverse_vocab
 
         # Use default GM extended plus vocabulary
         model.midi_output_vocab = program_vocab_presets["gm_ext_plus"]

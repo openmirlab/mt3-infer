@@ -50,8 +50,11 @@ The following packages should always align with versions specified in `../../wor
   - `nvidia-cudnn-cu12>=9.5.1.17`
 
 - **Other Critical Libraries**:
-  - `lightning>=2.3.0`
   - `protobuf>=3.20.3,<4.0` (override for TensorFlow compatibility)
+
+Note: `lightning`/`pytorch_lightning` is no longer a dependency of this
+project at all (removed 2026-07; YourMT3 uses a vendored
+`LightningModuleShim` instead -- see `mt3_infer/models/yourmt3/model/lightning_shim.py`).
 
 ### Before Adding Dependencies
 

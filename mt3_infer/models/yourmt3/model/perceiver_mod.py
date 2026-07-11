@@ -13,6 +13,11 @@
     - AliBi positional bias
     - Mixtral of Experts (MoE) feedforward layer
 
+    PerceiverTFEncoder is one of the three encoder_type options
+    ("t5", "perceiver-tf", "conformer") model/ymt3.py's
+    YourMT3.set_encoder_decoder() picks between based on model_cfg.
+
+Reads: model/perceiver_helper.py (PerceiverTFConfig), model/ff_layer.py.
 """
 import math
 from einops import rearrange
@@ -852,61 +857,3 @@ class PerceiverTFEncoder(PerceiverTFPreTrainedModel):
             cross_attentions=tuple(all_cross_attentions) if all_cross_attentions else None,
             router_logits=tuple(all_router_logits) if all_router_logits else None)
 
-
-def test():
-    # In HuggingFace's Perceiver implementation:
-    # `q_dim` is the latent array dimension d_latents of ((B), num_latents, d_latents).
-    # `kv_dim`os the actual input dimension D of (B, T, D)
-    # `qk_channels`, `v_channels`: are projection dimensions for attention, (B, T, C)
-    #                              (B, T, D) --> projection --> (B, T, C)
-    # However, PerceiverTF does not require projection:
-    # It takes as input a latent tensor (B, num_latents, d_latents) and a conv_feat tensor (T, B, F, C)
-    # The `spectral-cross-attention` and `local-self-attention-transformer` takes as input (B*T, F, C),
-    # and C=D=d_latents.
-    from model.ops import count_parameters
-
-    # Test input
-    b = 2  # batch
-    t = 10  # time steps (330 for 6s in paper)
-    f = 128  # freq of conv_feat
-    c = 128  # channels of conv_feat
-    k = 24  # num_latents
-    d = 128  # d_latents
-    conv_feat = torch.randn(b, t, f, c)
-
-    # construct PerceiverTFEncoder
-    config = PerceiverTFConfig()
-    pe_types = ['alibi', 'alibit', 'trainable', 'tkd', 'td', 'tk', 'kdt', None]
-    config.ff_layer_type = 'moe'
-    config.moe_num_experts = 4
-    config.moe_topk = 2
-
-    for pe_type in pe_types:
-        config.position_encoding_type = pe_type  # 'alibi', 'alibit', 'trainable', 'tkd', 'td', 'tk', 'kdt', None
-        config.num_latents = k
-        config.d_latents = d
-        config.kv_dim = c
-        config.qk_channels = d
-        config.v_channels = d
-        encoder = PerceiverTFEncoder(config)
-        encoder.eval()
-        assert encoder.latent_array.latents.size() == (k, d)
-        # forward
-        enc_hidden_state = encoder.forward(inputs_embeds=conv_feat).last_hidden_state
-        # print(enc_hidden_state.shape)  # [2, 10, 24, 128] = [B, T, K, D]
-        n_param = count_parameters(encoder)[1] // 1000
-        print(config.position_encoding_type, f'num_param: {n_param}K')
-    """
-    PE type | num. param.
-    None | 1397K
-    alibi | 1397K
-    alibit (train slope) | 1397K
-    tkd | 2442K
-    td | 1441K
-    tk | 1405K
-    kdt | 1444K 
-
-    MLP | 2637K
-    MoE (4 experts) | 4411K
-    MoE (6 experts) | 5594K
-    """
