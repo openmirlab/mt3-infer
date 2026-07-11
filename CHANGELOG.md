@@ -2,6 +2,14 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
+## [Unreleased]
+
+### Removed
+- Google Colab quickstart notebook (`notebooks/quickstart_colab.ipynb`) and
+  the README's Colab badge/section/feature bullet — maintaining a separate
+  notebook environment alongside the PyPI package was more upkeep than the
+  audience justified.
+
 ## [0.2.0] - 2026-07-11
 
 ### Changed
