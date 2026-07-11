@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 from mt3_infer.base import MT3Base
-from mt3_infer.exceptions import CheckpointError, InferenceError, ModelNotFoundError
+from mt3_infer.exceptions import CheckpointError, FrameworkError, InferenceError, ModelNotFoundError
 
 # Checkpoint configurations from app.py
 CHECKPOINT_CONFIGS = {
@@ -202,6 +202,24 @@ class YourMT3Adapter(MT3Base):
 
             print(f"Model loaded successfully! (type: {type(self.model).__name__})")
 
+        except ImportError as e:
+            # ModuleNotFoundError is a subclass of ImportError.
+            # A missing dependency (e.g. an incomplete install) surfaces here as
+            # ModuleNotFoundError. Previously this was blanket-wrapped as
+            # CheckpointError below, which reads as "your checkpoint file is bad"
+            # when the real problem is a missing Python package -- misleading and
+            # hard to act on. Report it as what it is instead.
+            self.model = None
+            self._model_loaded = False
+            raise FrameworkError(
+                f"Failed to import a dependency required by YourMT3: {e}\n"
+                "This usually means your environment is missing a required package. "
+                "Reinstall with: uv sync  (or: pip install --upgrade mt3-infer)"
+            ) from e
+        except CheckpointError:
+            self.model = None
+            self._model_loaded = False
+            raise
         except Exception as e:
             self.model = None  # Reset on error
             self._model_loaded = False

@@ -46,8 +46,11 @@ dependencies = [
 
 [project.optional-dependencies]
 # Full dependencies (includes all optional features)
+# NOTE: `lightning` was removed here as part of the ADOPT campaign -- YourMT3
+# (mt3_infer/models/yourmt3/) now uses a vendored LightningModuleShim
+# (model/lightning_shim.py) instead of pytorch_lightning.LightningModule, so
+# no backend needs the Lightning/torchmetrics stack for inference anymore.
 full = [
-    "lightning>=2.3.0",
     "matplotlib>=3.8.0",
     "pyloudnorm>=0.1.1",
     "pyrubberband>=0.4.0",
