@@ -424,16 +424,3 @@ class ConformerYMT3Encoder(nn.Module):
             attentions=all_self_attentions,
         )
 
-
-def test():
-    import torch
-    from model.conformer_mod import ConformerYMT3Encoder
-    from model.conformer_helper import ConformerYMT3Config
-    from model.ops import count_parameters
-    config = ConformerYMT3Config()
-    encoder = ConformerYMT3Encoder(config)
-    encoder.eval()
-    # num params: 48,468,992 w/ intermediate_size=2048
-    # num params: 23,278,592 w/ intermediate_size=512
-    x = torch.randn(2, 256, 512)  # (B, T, D)
-    enc_hs = encoder.forward(inputs_embeds=x)['last_hidden_state']  # (B, T, D)

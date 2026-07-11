@@ -39,7 +39,7 @@ from mt3_infer.models.yourmt3.model.projection_layer import get_projection_layer
 from mt3_infer.models.yourmt3.utils.note_event_dataclasses import Note
 from mt3_infer.models.yourmt3.utils.note2event import mix_notes
 from mt3_infer.models.yourmt3.utils.event2note import merge_zipped_note_events_and_ties_to_notes, DECODING_ERR_TYPES
-from mt3_infer.models.yourmt3.utils.metrics import compute_track_metrics
+# Removed compute_track_metrics import - unused (training/eval-only, see utils/metrics.py removal)
 # Removed AMTMetrics import - training-only, not needed for inference
 # from utils.utils import write_model_output_as_npy
 from mt3_infer.models.yourmt3.utils.utils import write_model_output_as_midi, create_inverse_vocab, write_err_cnt_as_json

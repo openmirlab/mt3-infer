@@ -22,12 +22,10 @@ from collections import Counter
 from mt3_infer.models.yourmt3.utils.note_event_dataclasses import Note
 from mt3_infer.models.yourmt3.utils.note2event import note2note_event
 from mt3_infer.models.yourmt3.utils.midi import note_event2midi
-from mt3_infer.models.yourmt3.utils.note2event import slice_multiple_note_events_and_ties_to_bundle
 from mt3_infer.models.yourmt3.utils.event2note import merge_zipped_note_events_and_ties_to_notes
-from mt3_infer.models.yourmt3.utils.metrics import compute_track_metrics
-from mt3_infer.models.yourmt3.utils.tokenizer import EventTokenizer, NoteEventTokenizer
+from mt3_infer.models.yourmt3.utils.tokenizer import EventTokenizer
 from mt3_infer.models.yourmt3.utils.note_event_dataclasses import Note, NoteEvent, Event
-from mt3_infer.models.yourmt3.config.vocabulary import GM_INSTR_FULL, GM_INSTR_CLASS_PLUS
+from mt3_infer.models.yourmt3.config.vocabulary import GM_INSTR_CLASS_PLUS
 from mt3_infer.models.yourmt3.config.config import shared_cfg
 
 
@@ -430,81 +428,11 @@ def assert_note_events_almost_equal(actual_note_events,
                                                                                  predicted_note_event)
 
 
-def note_event2token2note_event_sanity_check(note_events: List[NoteEvent],
-                                             notes: List[Note],
-                                             report_err_cnt=False) -> Counter:
-    # slice note events
-    max_time = note_events[-1].time
-    num_segs = int(max_time * 16000 // 32757 + 1)
-    seg_len_sec = 32767 / 16000
-    start_times = [i * seg_len_sec for i in range(num_segs)]
-    note_event_segments = slice_multiple_note_events_and_ties_to_bundle(
-        note_events,
-        start_times,
-        seg_len_sec,
-    )
-
-    # encode
-    tokenizer = NoteEventTokenizer()
-    token_array = np.zeros((num_segs, 1024), dtype=np.int32)
-    for i, tup in enumerate(list(zip(*note_event_segments.values()))):
-        padded_tokens = tokenizer.encode_plus(*tup)
-        token_array[i, :] = padded_tokens
-
-    # decode: warning: Invalid pitch event without program or velocity --> solved
-    zipped_note_events_and_tie, list_events, err_cnt = tokenizer.decode_list_batches([token_array],
-                                                                                     start_times,
-                                                                                     return_events=True)
-    if report_err_cnt:
-        # report error and do not break..
-        err_cnt_all = err_cnt
-    else:
-        assert len(err_cnt) == 0
-        err_cnt_all = Counter()
-
-    # First check, the number of empty note_events and tie_note_events
-    cnt_org_empty = 0
-    cnt_recon_empty = 0
-    for i, (recon_note_events, recon_tie_note_events, _, _) in enumerate(zipped_note_events_and_tie):
-        org_note_events = note_event_segments['note_events'][i]
-        org_tie_note_events = note_event_segments['tie_note_events'][i]
-        if org_note_events == []:
-            cnt_org_empty += 1
-        if recon_note_events == []:
-            cnt_recon_empty += 1
-
-    # assert len(org_note_events) == len(recon_note_events)  # passed after bug fix
-
-    # Check the reconstruction of note_events
-    for i, (recon_note_events, recon_tie_note_events, _, _) in enumerate(zipped_note_events_and_tie):
-        org_note_events = note_event_segments['note_events'][i]
-        org_tie_note_events = note_event_segments['tie_note_events'][i]
-
-        org_note_events.sort(key=lambda n_ev: (n_ev.time, n_ev.is_drum, n_ev.program, n_ev.velocity, n_ev.pitch))
-        org_tie_note_events.sort(key=lambda n_ev: (n_ev.program, n_ev.pitch))
-        recon_note_events.sort(key=lambda n_ev: (n_ev.time, n_ev.is_drum, n_ev.program, n_ev.velocity, n_ev.pitch))
-        recon_tie_note_events.sort(key=lambda n_ev: (n_ev.program, n_ev.pitch))
-
-        #assert_note_events_almost_equal(org_note_events, recon_note_events)
-        # assert_note_events_almost_equal(
-        #     org_tie_note_events, recon_tie_note_events, ignore_time=True)
-
-    # Check notes: of course this fails.. and a lot of warning for cut off 20s
-    recon_notes, err_cnt = merge_zipped_note_events_and_ties_to_notes(zipped_note_events_and_tie, fix_offset=False)
-    # assert len(err_cnt) == 0  # this error is due to the cut off 5 seconds...
-
-    # Check metric
-    drum_metric, non_drum_metric, instr_metric = compute_track_metrics(recon_notes,
-                                                                       notes,
-                                                                       eval_vocab=GM_INSTR_FULL,
-                                                                       onset_tolerance=0.005)  # 5ms
-    if not np.isnan(non_drum_metric['offset_f']) and non_drum_metric['offset_f'] != 1.0:
-        warnings.warn(f"non_drum_metric['offset_f'] = {non_drum_metric['offset_f']}")
-        assert non_drum_metric['onset_f'] > 0.99
-    if not np.isnan(drum_metric['onset_f_drum']) and non_drum_metric['offset_f'] != 1.0:
-        warnings.warn(f"drum_metric['offset_f'] = {drum_metric['offset_f']}")
-        assert drum_metric['offset_f'] > 0.99
-    return err_cnt_all + Counter(err_cnt)
+# Removed note_event2token2note_event_sanity_check() -- its only callers were
+# in utils/preprocess/ (removed as an orphaned dev/dataset-prep tree, see the
+# ADOPT campaign's strip-list phase), and it was the only user of
+# compute_track_metrics/utils/metrics.py, GM_INSTR_FULL, and
+# slice_multiple_note_events_and_ties_to_bundle/NoteEventTokenizer in this file.
 
 
 def str2bool(v):

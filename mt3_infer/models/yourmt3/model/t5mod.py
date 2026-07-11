@@ -667,21 +667,3 @@ class MultiChannelT5Decoder(T5PreTrainedModel):
         else:
             return decoder_outputs  # ['last_hidden_state']: (B, K, T, D)
 
-
-def test_multi_channel_t5_decoder():
-    # Test multi-channel decoder
-    config = T5Config()
-    config.num_channels = 4
-    config.d_model = 32
-    config.num_layers = 2
-    config.num_heads = 2
-    config.num_max_positions = 64  # for positional encoding
-
-    decoder = MultiChannelT5Decoder(decoder_config=None, config=config)
-    decoder.eval()
-
-    input_emb = torch.rand(2, 4, 64, 32)  # (B, K, T, D)
-    enc_hs = torch.rand(2, 4, 64, 32)  # (B, K, T, D)
-    out = decoder(inputs_embeds=input_emb, encoder_hidden_states=enc_hs, return_dict=True)
-    # out['last_hidden_state']: (B, K, T, D)
-    # out['past_key_values']: Tuple[Tuple[torch.Tensor]]
