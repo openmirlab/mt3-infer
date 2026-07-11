@@ -6,4 +6,4 @@ built wheel/sdist metadata always matches) and `mt3_infer/__init__.py` (so
 hand-maintained "0.1.3" literals that could drift.
 """
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"

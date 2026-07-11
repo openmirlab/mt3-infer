@@ -2,7 +2,7 @@
 
 All notable changes to MT3-Infer will be documented in this file.
 
-## [Unreleased]
+## [0.2.0] - 2026-07-11
 
 ### Changed
 - **YourMT3 no longer depends on pytorch_lightning/lightning at runtime.** Its
