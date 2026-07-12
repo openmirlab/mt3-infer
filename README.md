@@ -11,28 +11,121 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 
 ---
 
-## 🎉 What's New
+## Why this exists
 
-- **v0.1.3** (Latest): removed note_seq dependency, transformers 4.44+ compatibility
-- **v0.1.1**: Fixed YAML config files inclusion in package distribution
-- **v0.1.0**: Initial release with 3 production-ready models (MR-MT3, MT3-PyTorch, YourMT3)
+[MT3](https://github.com/magenta/mt3) ("Multi-Task Multitrack Music
+Transcription") is Google Magenta's JAX/Flax model for transcribing
+polyphonic, multi-instrument audio into MIDI. The reference implementation
+is research code: pinned to an old JAX/Flax/t5x/seqio stack that's
+increasingly painful to install alongside anything PyTorch-based, and it
+ships as a training-and-eval codebase rather than a drop-in inference
+library.
 
-## Features
-
-- ✅ **Unified API**: One interface for all MT3 variants
-- ✅ **Production Ready**: Clean, tested, ~8MB package size
-- ✅ **Auto-Download**: Automatic checkpoint downloads on first use
-- ✅ **4 Download Methods**: Auto, Python API, CLI, standalone script
-- ✅ **3 Models**: MR-MT3, MT3-PyTorch, YourMT3
-- ✅ **Framework Isolated**: Clean PyTorch/TensorFlow/JAX separation
-- ✅ **CLI Tool**: `mt3-infer` command-line interface
-- ✅ **Reproducible**: Pinned dependencies, verified checkpoints
+In the years since, the community produced several independent PyTorch
+ports and variants — each with its own environment, its own quirks, and no
+shared interface. **MT3-Infer** wraps three of them (MR-MT3, MT3-PyTorch,
+YourMT3) behind one `MT3Base` interface and one public API
+(`transcribe()`, `load_model()`), with automatic checkpoint management, so
+"run MT3-family transcription" doesn't require reproducing three separate
+research environments. The original JAX/Flax Magenta implementation itself
+is **not** vendored here (see [Scope](#scope) below) — this repo only
+reprovides the PyTorch-based descendants.
 
 ---
 
-## Quick Start
+## Acknowledgments
 
-### Installation
+MT3-Infer wraps and vendors code from the following projects. None of this
+would exist without their original authors' work:
+
+- **[Magenta MT3](https://github.com/magenta/mt3)** (Apache-2.0) — Google
+  Research / Magenta team. The original model and task this whole family
+  descends from (see [Citation](#citation)). Not currently vendored in this
+  repo — see [Scope](#scope).
+- **[MR-MT3](https://github.com/gudgud96/MR-MT3)** (MIT) — Hao Hao Tan, Kin
+  Wai Cheuk, Taemin Cho, Wei-Hsiang Liao, Yuki Mitsufuji. Vendored in
+  `mt3_infer/models/mr_mt3/`; pretrained weights re-hosted at
+  [huggingface.co/gudgud1014/MR-MT3](https://huggingface.co/gudgud1014/MR-MT3).
+- **[MT3-PyTorch](https://github.com/kunato/mt3-pytorch)** — kunato. Vendored
+  unmodified in `mt3_infer/models/mt3_pytorch/`; no license is declared
+  upstream, so the vendored tree is kept byte-for-byte as extracted (see
+  [LICENSE](LICENSE) and `CLAUDE.md` for the full honesty note).
+- **[YourMT3](https://huggingface.co/spaces/mimbres/YourMT3)** (Apache-2.0) —
+  Sungkyun Chang, Emmanouil Benetos, Holger Kirchhoff, Simon Dixon (see the
+  [YourMT3+ paper](https://arxiv.org/abs/2407.04822), MLSP 2024). Vendored
+  in `mt3_infer/models/yourmt3/`.
+
+Full commit-level provenance for each vendored tree is in
+[`mt3_infer/config/external_integrations.yaml`](mt3_infer/config/external_integrations.yaml).
+
+---
+
+## Citation
+
+If you use MT3-Infer in your research, please cite the original MT3 paper:
+
+```bibtex
+@inproceedings{gardner2022mt3,
+  title     = {{MT3}: Multi-Task Multitrack Music Transcription},
+  author    = {Gardner, Josh and Simon, Ian and Manilow, Ethan and Hawthorne, Curtis and Engel, Jesse},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  url       = {https://openreview.net/forum?id=iMSjopcOn0p}
+}
+```
+
+(Verified against the paper's [arXiv listing](https://arxiv.org/abs/2111.03017)
+and [DBLP](https://dblp.org/rec/conf/iclr/GardnerSMHE22.html) — the paper
+was published at ICLR 2022, not ISMIR, and Josh Gardner is the first
+author, not Curtis Hawthorne.)
+
+If you use a specific backend, consider also citing its own paper — e.g.
+YourMT3's [YourMT3+ paper](https://arxiv.org/abs/2407.04822) (MLSP 2024).
+
+---
+
+## Features
+
+- **Unified API**: One interface for all MT3 variants
+- **Production Ready**: Clean, tested, ~8MB package size
+- **Auto-Download**: Automatic checkpoint downloads on first use
+- **4 Download Methods**: Auto, Python API, CLI, standalone script
+- **3 Models**: MR-MT3, MT3-PyTorch, YourMT3
+- **Framework Isolated**: Clean PyTorch/TensorFlow/JAX separation
+- **CLI Tool**: `mt3-infer` command-line interface
+- **Reproducible**: Pinned dependencies, verified checkpoints
+
+**Current status:** all three PyTorch-based backends (MR-MT3, MT3-PyTorch,
+YourMT3) are implemented, tested, and installable from PyPI today. What's
+not yet supported: the original Magenta MT3 (JAX/Flax) backend is not
+wrapped (see Scope), and there's no batch-processing API, ONNX export, or
+streaming inference — transcription is single-file, in-process, one model
+at a time.
+
+---
+
+## Scope
+
+**In scope:** a unified inference API over PyTorch-based MT3-family
+transcription models, with checkpoint management (download, cache,
+override) handled consistently across backends.
+
+**Out of scope:**
+- **Training or fine-tuning** any of the wrapped models — this is an
+  inference-only toolkit.
+- **Magenta MT3 (JAX/Flax)** — excluded due to dependency conflicts between
+  the JAX/Flax/t5x/seqio stack and the PyTorch ecosystem the other three
+  backends share. The three currently-wrapped PyTorch models provide
+  comprehensive coverage for transcription scenarios in the meantime.
+- **Editing/rendering vendored model code** — `mt3_infer/models/mt3_pytorch/`
+  is license-frozen (no license declared upstream); it's kept exactly as
+  extracted. See `CLAUDE.md` for the full constraint.
+
+---
+
+## Install
+
+### Basic Installation
 
 MT3-Infer is available on [PyPI](https://pypi.org/project/mt3-infer/).
 
@@ -43,6 +136,43 @@ pip install mt3-infer
 # Using UV (recommended for development)
 uv pip install mt3-infer
 ```
+
+### Development Installation
+
+```bash
+# Clone repository
+git clone https://github.com/openmirlab/mt3-infer.git
+cd mt3-infer
+
+# Install with UV (recommended)
+uv sync --extra torch --extra dev
+
+# Or with pip
+pip install -e ".[torch,dev]"
+```
+
+### Optional Dependencies
+
+```bash
+# PyTorch backend (default)
+pip install mt3-infer[torch]
+
+# TensorFlow backend
+pip install mt3-infer[tensorflow]
+
+# All backends
+pip install mt3-infer[all]
+
+# Development tools
+pip install mt3-infer[dev]
+
+# MIDI synthesis (optional)
+pip install mt3-infer[synthesis]
+```
+
+---
+
+## Quick Start
 
 ### Simple Transcription (One Line!)
 
@@ -200,62 +330,6 @@ download_model("yourmt3")
 
 ---
 
-## Diagnostics & Troubleshooting
-
-Extra smoke tests and tooling live in `examples/diagnostics/`:
-
-- `download_mt3_pytorch.py` – manual vs. automatic checkpoint download walkthrough
-- `test_all_models.py` – Loads all registered models and runs a short transcription
-- `test_checkpoint_download.py` – Verifies checkpoints land in `MT3_CHECKPOINT_DIR`
-- `test_yourmt3.py` – Full audio-to-MIDI flow for the YourMT3 MoE model
-
-Run them via `uv run python examples/diagnostics/<script>.py` after setting any needed environment variables.
-
----
-
-## Installation Options
-
-### Basic Installation
-
-```bash
-pip install mt3-infer
-```
-
-### Development Installation
-
-```bash
-# Clone repository
-git clone https://github.com/openmirlab/mt3-infer.git
-cd mt3-infer
-
-# Install with UV (recommended)
-uv sync --extra torch --extra dev
-
-# Or with pip
-pip install -e ".[torch,dev]"
-```
-
-### Optional Dependencies
-
-```bash
-# PyTorch backend (default)
-pip install mt3-infer[torch]
-
-# TensorFlow backend
-pip install mt3-infer[tensorflow]
-
-# All backends
-pip install mt3-infer[all]
-
-# Development tools
-pip install mt3-infer[dev]
-
-# MIDI synthesis (optional)
-pip install mt3-infer[synthesis]
-```
-
----
-
 ## CLI Tool
 
 The `mt3-infer` CLI provides convenient access to all functionality:
@@ -313,33 +387,18 @@ See the CLI section above for detailed download instructions.
 
 ---
 
-## Project Status
+## Diagnostics & Troubleshooting
 
-**Current Version:** 0.1.2 (Production Ready!)
+Extra smoke tests and tooling live in `examples/diagnostics/`:
 
-### ✅ Completed Features
-- ✅ Core infrastructure (MT3Base interface, utilities)
-- ✅ 3 production adapters (MR-MT3, MT3-PyTorch, YourMT3)
-- ✅ Public API (`transcribe()`, `load_model()`)
-- ✅ Model registry with aliases
-- ✅ Checkpoint download system (4 methods)
-- ✅ CLI tool (`mt3-infer`)
-- ✅ Production cleanup (~8MB package)
-- ✅ Comprehensive documentation
+- `download_mt3_pytorch.py` – manual vs. automatic checkpoint download walkthrough
+- `test_all_models.py` – Loads all registered models and runs a short transcription
+- `test_checkpoint_download.py` – Verifies checkpoints land in `MT3_CHECKPOINT_DIR`
+- `test_yourmt3.py` – Full audio-to-MIDI flow for the YourMT3 MoE model
 
-### 📦 Package Statistics
-- **Source code:** ~5 MB
-- **Vendor dependencies:** ~3 MB
-- **Documentation:** 284 KB
-- **Total (source only):** ~8 MB
-- **With downloaded models:** ~882 MB
+Run them via `uv run python examples/diagnostics/<script>.py` after setting any needed environment variables.
 
-### 🚧 Roadmap
-- **v0.2.0** (Planned): Batch processing, additional optimizations
-- **v0.3.0** (Planned): ONNX export, streaming inference
-- **v1.0.0** (Planned): Full test coverage, additional features
-
-**Note:** Magenta MT3 (JAX/Flax) has been excluded due to dependency conflicts with the PyTorch ecosystem. The current 3 models (MR-MT3, MT3-PyTorch, YourMT3) provide comprehensive coverage for various transcription scenarios.
+See also [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues.
 
 ---
 
@@ -388,6 +447,59 @@ mt3_infer/
 
 ---
 
+## Integration with worzpro-demo
+
+To use mt3-infer in the worzpro-demo project:
+
+```toml
+# In worzpro-demo/pyproject.toml
+[tool.uv.sources]
+mt3-infer = { git = "https://github.com/openmirlab/mt3-infer", extras = ["torch"] }
+```
+
+Then in Python:
+```python
+from mt3_infer import transcribe
+midi = transcribe(audio, sr=16000)
+```
+
+---
+
+## Examples
+
+See the [examples/](examples/) directory for complete examples:
+
+- **[public_api_demo.py](examples/public_api_demo.py)** - Main usage example
+- **[synthesize_all_models.py](examples/synthesize_all_models.py)** - Compare all models
+- **[demo_midi_synthesis.py](examples/demo_midi_synthesis.py)** - MIDI synthesis demo
+- **[test_download.py](examples/test_download.py)** - Download validation
+- **[compare_models.py](examples/compare_models.py)** - Model comparison
+
+---
+
+## What this project will NEVER bundle
+
+MT3-Infer downloads pretrained checkpoints at runtime — it does **not**,
+and will never, ship model weights inside the pip package or the git
+repository itself:
+
+- All three checkpoints (MR-MT3 ~176MB, MT3-PyTorch ~176MB, YourMT3 ~536MB)
+  are fetched on first use into `.mt3_checkpoints/<model>/` (or
+  `$MT3_CHECKPOINT_DIR`), never committed to this repo or bundled into the
+  wheel — the published package is ~8MB of source only.
+- The MR-MT3 checkpoint download is sha256-verified against a recorded hash
+  before use. The MT3-PyTorch and YourMT3 checkpoints are currently
+  downloaded via `git lfs` and are **not yet** checksum-verified at
+  download time — their hashes are recorded for provenance/audit in
+  [`mt3_infer/config/checkpoints.yaml`](mt3_infer/config/checkpoints.yaml),
+  but enforcement at download time is a known gap, not yet wired in.
+- Checkpoints are re-hosted or re-fetched from each backend's own upstream
+  (HuggingFace for MR-MT3, git-lfs from the original repos for
+  MT3-PyTorch and YourMT3) — none of these are currently mirrored under
+  openmirlab control.
+
+---
+
 ## Development
 
 ### Setup
@@ -426,53 +538,7 @@ pytest
 
 See docs/dev/PRINCIPLES.md for development guidelines.
 
----
-
-## Integration with worzpro-demo
-
-To use mt3-infer in the worzpro-demo project:
-
-```toml
-# In worzpro-demo/pyproject.toml
-[tool.uv.sources]
-mt3-infer = { git = "https://github.com/openmirlab/mt3-infer", extras = ["torch"] }
-```
-
-Then in Python:
-```python
-from mt3_infer import transcribe
-midi = transcribe(audio, sr=16000)
-```
-
----
-
-## Examples
-
-See the [examples/](examples/) directory for complete examples:
-
-- **[public_api_demo.py](examples/public_api_demo.py)** - Main usage example
-- **[synthesize_all_models.py](examples/synthesize_all_models.py)** - Compare all models
-- **[demo_midi_synthesis.py](examples/demo_midi_synthesis.py)** - MIDI synthesis demo
-- **[test_download.py](examples/test_download.py)** - Download validation
-- **[compare_models.py](examples/compare_models.py)** - Model comparison
-
----
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-This project includes code adapted from:
-- **Magenta MT3** (Apache-2.0) - Google Research
-- **MR-MT3** (MIT) - Hao Hao Tan et al.
-- **MT3-PyTorch** - Kunato's PyTorch port
-- **YourMT3** (Apache-2.0) - Minz Won et al.
-
-See [mt3_infer/config/checkpoints.yaml](mt3_infer/config/checkpoints.yaml) for full provenance.
-
----
-
-## Contributing
+### Contributing
 
 We welcome contributions! Please:
 
@@ -482,18 +548,14 @@ We welcome contributions! Please:
 
 ---
 
-## Citation
+## License
 
-If you use MT3-Infer in your research, please cite the original MT3 papers:
+MIT License - see [LICENSE](LICENSE) for details.
 
-```bibtex
-@inproceedings{hawthorne2022mt3,
-  title={Multi-Task Multitrack Music Transcription},
-  author={Hawthorne, Curtis and others},
-  booktitle={ISMIR},
-  year={2022}
-}
-```
+See [Acknowledgments](#acknowledgments) above for the vendored projects this
+repo builds on, and [LICENSE](LICENSE) /
+[mt3_infer/config/external_integrations.yaml](mt3_infer/config/external_integrations.yaml)
+for full per-model provenance and license status.
 
 ---
 

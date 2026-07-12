@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-Guidance for Claude Code (or any agent) working in this repository.
+Guidance for Claude Code (or any agent) working in this repository. Follows
+the [openmirlab org constitution](https://github.com/openmirlab/openmirlab-skills/blob/main/plugins/openmirlab/CLAUDE.md).
 
 ## What this is
 
@@ -9,6 +10,15 @@ independent MT3 (music transcription) model implementations behind one
 `MT3Base` interface (`mt3_infer/base.py`) and one public API
 (`mt3_infer/api.py`: `transcribe()`, `load_model()`, `list_models()`,
 `get_model_info()`, `download_model()`). Entry point: `mt3_infer/__init__.py`.
+
+**Scope / status:** shipped on PyPI, all three PyTorch backends (`mr_mt3`,
+`mt3_pytorch`, `yourmt3`) working. Magenta MT3 (JAX/Flax) is intentionally
+not wrapped — see README's Scope section; the `jax` extra in
+`pyproject.toml` is commented out, not a committed roadmap item. No
+training path, no batch/streaming/ONNX API exist in this repo; if that
+framing shows up anywhere (docs, comments, planning notes), it's aspirational
+dev-phase bookkeeping, not a README-facing promise — keep it out of
+README.md per the org constitution's no-roadmap-language rule.
 
 ```
 mt3_infer/
