@@ -4,6 +4,51 @@ All notable changes to MT3-Infer will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`transformers>=4.35.0` with no upper bound broke YourMT3 on a fresh
+  install**: transformers 5.x removed `transformers.utils.model_parallel_utils`
+  (imported, but never used, in `mt3_infer/models/yourmt3/model/t5mod.py`) and
+  `transformers.pytorch_utils.find_pruneable_heads_and_indices` (used only by
+  an unreachable `prune_heads()` method in
+  `mt3_infer/models/yourmt3/model/perceiver_mod.py`) — both dead, training-era
+  code paths inherited from upstream that no inference caller ever exercises.
+  Removed both instead of adding a transformers ceiling, keeping the floor
+  open per the org's floors-not-ceilings policy. `test_yourmt3.py` now
+  collects and passes again (was failing at collection with
+  `ModuleNotFoundError`/`ImportError` on any transformers>=5.0 install).
+- **Python 3.9 was broken independently of the transformers issue**:
+  `mt3_infer/adapters/yourmt3.py` used `str | None`-style type hints in
+  function signatures without `from __future__ import annotations`, which
+  raises `TypeError` at import time on 3.9 (PEP 604 `|` unions in annotations
+  need postponed evaluation before 3.10). Added the future import.
+- CI (`.github/workflows/test.yml`) only tested Python 3.10 and 3.12 despite
+  `requires-python = ">=3.9"` and classifiers claiming 3.9-3.12. Matrix now
+  covers all four claimed versions; all pass (68 passed, 3 deselected on
+  each).
+
+### Changed
+- Bumped stale dependency floors that were 2-4 years old and verified against
+  the full test suite pinned at the new floor on every supported Python
+  version: `numpy>=1.26.0` (was `1.22`), `torch>=2.4.0` (was `2.0.0`),
+  `torchvision>=0.19.0` (was `0.15.0`), `torchaudio>=2.4.0` (was `2.0.0`),
+  `einops>=0.7.0` (was `0.4.1`), `scipy>=1.11.4` (was `1.10.0`),
+  `absl-py>=2.0.0` (was `1.0.0`), `tensorflow>=2.16.0` extra (was `2.13.0`).
+  The `torch` floor specifically had to clear 2.4.0 because transformers 5.x
+  disables its own PyTorch integration below that version in a way that
+  crashes at import time rather than failing cleanly.
+  `mt3_infer/utils/framework.py`'s `check_torch_version()`/
+  `check_tensorflow_version()` runtime checks were updated to match.
+- **`uv.lock` regenerated** to match the new floors. Discovered along the way:
+  torchaudio publishes no `requires-python` metadata on PyPI for any release,
+  so `uv lock`'s cross-Python resolution can't tell that 2.9.0+ dropped cp39
+  wheels — it was picking one universal "latest" torchaudio for every
+  supported Python bucket, which resolves fine but fails to install on 3.9.
+  Added an explicit `python_version < '3.10'` / `>= '3.10'` split for
+  `torchaudio` in `pyproject.toml` (all three dependency lists: core, `torch`
+  extra, `all` extra) so the lock forks correctly; verified with a clean
+  `uv sync --extra dev --extra full` + full test run on all four Python
+  versions.
+
 ### Removed
 - Google Colab quickstart notebook (`notebooks/quickstart_colab.ipynb`) and
   the README's Colab badge/section/feature bullet — maintaining a separate

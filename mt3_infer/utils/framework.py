@@ -17,7 +17,7 @@ def check_torch_version() -> None:
         FrameworkError: Version mismatch or torch not installed.
 
     Note:
-        Required version: torch>=2.0.0 (for Colab and broad compatibility)
+        Required version: torch>=2.4.0 (matches pyproject.toml floor)
     """
     try:
         import torch
@@ -29,7 +29,7 @@ def check_torch_version() -> None:
         ) from e
 
     required_major = 2
-    required_minor = 0
+    required_minor = 4
     actual_version = torch.__version__.split("+")[0]  # Remove CUDA suffix
 
     try:
@@ -55,7 +55,7 @@ def check_tensorflow_version() -> None:
         FrameworkError: Version mismatch or tensorflow not installed.
 
     Note:
-        Required version: tensorflow>=2.13.0 (aligned with worzpro-demo)
+        Required version: tensorflow>=2.16.0 (matches pyproject.toml floor)
     """
     try:
         import tensorflow as tf
@@ -67,7 +67,7 @@ def check_tensorflow_version() -> None:
         ) from e
 
     required_major = 2
-    required_minor = 13
+    required_minor = 16
     actual_version = tf.__version__
 
     try:

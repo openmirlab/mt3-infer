@@ -26,7 +26,7 @@ from typing import Optional, Tuple, Union, List, Dict, Literal
 import torch
 from torch import nn
 from transformers.models.perceiver.modeling_perceiver import PerceiverSelfOutput
-from transformers.pytorch_utils import (apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer)
+from transformers.pytorch_utils import apply_chunking_to_forward
 from mt3_infer.models.yourmt3.model.perceiver_helper import MoEModelOutputWithCrossAttentions
 from mt3_infer.models.yourmt3.model.perceiver_helper import PerceiverTFPreTrainedModel, PerceiverTFConfig
 from mt3_infer.models.yourmt3.model.positional_encoding import AlibiPositionalBias, get_rotary_emb
@@ -291,24 +291,6 @@ class PerceiverAlibiAttention(nn.Module):
                 output_channels = v_channels
         self.output = PerceiverSelfOutput(config, input_channels=self.self.v_channels, output_channels=output_channels)
         self.use_query_residual = use_query_residual
-        self.pruned_heads = set()
-
-    def prune_heads(self, heads):
-        if len(heads) == 0:
-            return
-        heads, index = find_pruneable_heads_and_indices(heads, self.self.num_attention_heads,
-                                                        self.self.attention_head_size, self.pruned_heads)
-
-        # Prune linear layers
-        self.self.query = prune_linear_layer(self.self.query, index)
-        self.self.key = prune_linear_layer(self.self.key, index)
-        self.self.value = prune_linear_layer(self.self.value, index)
-        self.output.dense = prune_linear_layer(self.output.dense, index, dim=1)
-
-        # Update hyper params and store pruned heads
-        self.self.num_attention_heads = self.self.num_attention_heads - len(heads)
-        self.self.all_head_size = self.self.attention_head_size * self.self.num_attention_heads
-        self.pruned_heads = self.pruned_heads.union(heads)
 
     def forward(
         self,
