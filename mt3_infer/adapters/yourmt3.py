@@ -17,6 +17,8 @@ dependency is needed for inference.
 Reads: models/yourmt3/inference_loader.py (load_model), base.py (MT3Base
 interface this implements: preprocess/forward/decode/transcribe).
 """
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
