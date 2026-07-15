@@ -561,6 +561,24 @@ for full per-model provenance and license status.
 
 ## Support
 
+### Explicit lifecycle sessions
+
+For reusable inference, use the composite session facade. A session owns one
+selected profile (MR-MT3, MT3-PyTorch, or YourMT3), while other profiles may
+remain in the disk checkpoint cache and are not loaded into memory.
+
+```python
+from mt3_infer import MT3Session
+
+with MT3Session(model="accurate", device="cuda") as session:
+    midi = session.infer(audio, sr=16000)
+```
+
+Call `load()`, `infer()`, `release()`, `close()`, `status`, and `cache_info()`
+explicitly when a context manager is not convenient. Existing `load_model()`
+and `transcribe()` one-shot APIs remain available for compatibility. Profile
+checkpoint metadata is package-owned in `mt3_infer/config/checkpoints.toml`.
+
 For issues and questions:
 - **GitHub Issues**: [github.com/openmirlab/mt3-infer/issues](https://github.com/openmirlab/mt3-infer/issues)
 - **Documentation**: docs/

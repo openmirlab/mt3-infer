@@ -141,6 +141,7 @@ include = [
     "mt3_infer/**/*.py",
     "mt3_infer/**/*.yaml",
     "mt3_infer/**/*.yml",
+    "mt3_infer/**/*.toml",
     "mt3_infer/py.typed",
 ]
 

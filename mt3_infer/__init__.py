@@ -31,6 +31,7 @@ from mt3_infer.api import (
     load_model,
     transcribe,
 )
+from mt3_infer.session import MT3Session
 
 __all__ = [
     "__version__",
@@ -50,4 +51,5 @@ __all__ = [
     "list_models",
     "get_model_info",
     "clear_cache",
+    "MT3Session",
 ]

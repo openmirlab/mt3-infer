@@ -1,0 +1,34 @@
+# Package-owned checkpoint profiles. Child backend packages remain URL owners.
+schema_version = 1
+
+[profiles.mr_mt3]
+backend = "pytorch"
+path = ".mt3_checkpoints/mr_mt3/mt3.pth"
+url = "https://huggingface.co/gudgud1014/MR-MT3/resolve/main/mt3.pth"
+sha256 = "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f"
+revision = "main"
+provenance = "Hugging Face gudgud1014/MR-MT3"
+
+[profiles.mt3_pytorch]
+backend = "pytorch"
+path = ".mt3_checkpoints/mt3_pytorch"
+url = "https://github.com/kunato/mt3-pytorch"
+sha256 = "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f"
+revision = "master"
+provenance = "GitHub kunato/mt3-pytorch (git-lfs)"
+
+[profiles.yourmt3]
+backend = "pytorch"
+path = ".mt3_checkpoints/yourmt3/mc13_256_g4_all_v7_mt3f_sqr_rms_moe_wf4_n8k2_silu_rope_rp_b36_nops/last.ckpt"
+url = "https://huggingface.co/spaces/mimbres/YourMT3"
+sha256 = "ae38e415c79efd5592dcb9b658cdb99ddb11d4c4e1eaa364cab04a052473fc25"
+revision = "main"
+provenance = "Hugging Face mimbres/YourMT3 (git-lfs)"
+
+[aliases]
+default = "mt3_pytorch"
+fast = "mr_mt3"
+accurate = "mt3_pytorch"
+multitask = "yourmt3"
+official = "mt3_pytorch"
+baseline = "mt3_pytorch"
