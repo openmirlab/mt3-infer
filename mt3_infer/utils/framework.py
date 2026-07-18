@@ -119,21 +119,33 @@ def get_device(device_hint: Optional[str] = None) -> str:
     Determine the target device for model inference.
 
     Args:
-        device_hint: User-specified device ("cuda", "cpu", "auto", None).
-                    "auto" or None will auto-detect CUDA availability.
+        device_hint: User-specified device ("cuda", "cpu", "auto", "cuda:N", None).
+                    "auto" or None will auto-detect CUDA availability. An
+                    explicit "cuda"/"cuda:N" request is honored as-is -- see
+                    Raises below -- matching the mt3_pytorch and yourmt3
+                    adapters, which pass an explicit device straight to
+                    torch and let it fail hard rather than silently
+                    substituting CPU.
 
     Returns:
-        Normalized device string: "cuda" or "cpu".
+        Normalized device string: "cuda", "cuda:N", or "cpu".
 
     Raises:
         ValueError: Invalid device hint.
+        RuntimeError: An explicitly-requested "cuda"/"cuda:N" device is not
+            usable (CUDA unavailable, or GPU initialization failed). Only
+            "auto" falls back to CPU; an explicit request is never silently
+            downgraded.
 
     Note:
-        This function includes automatic GPU-to-CPU fallback if GPU fails.
+        "auto" still falls back to CPU with a warning when no working GPU
+        is found -- that behavior is unchanged. Only the explicit-request
+        path was changed to raise instead of falling back.
 
     Example:
         >>> device = get_device("auto")  # Returns "cuda" if available, else "cpu"
         >>> device = get_device("cpu")   # Forces CPU
+        >>> device = get_device("cuda")  # Returns "cuda", or raises RuntimeError
     """
     import warnings
 
@@ -142,9 +154,11 @@ def get_device(device_hint: Optional[str] = None) -> str:
 
     device_hint = device_hint.lower()
 
-    if device_hint not in ("cuda", "cpu", "auto"):
+    is_cuda_request = device_hint == "cuda" or device_hint.startswith("cuda:")
+
+    if device_hint not in ("cpu", "auto") and not is_cuda_request:
         raise ValueError(
-            f"Invalid device: {device_hint}. Must be 'cuda', 'cpu', or 'auto'."
+            f"Invalid device: {device_hint}. Must be 'cuda', 'cuda:N', 'cpu', or 'auto'."
         )
 
     if device_hint == "auto":
@@ -174,32 +188,34 @@ def get_device(device_hint: Optional[str] = None) -> str:
         )
         return "cpu"
 
-    # User explicitly requested cuda - try it with fallback
-    if device_hint == "cuda":
+    # User explicitly requested cuda (or cuda:N) - honor it or raise.
+    # Unlike "auto", an explicit request is never silently downgraded to
+    # CPU: that would override the caller's stated choice. This mirrors
+    # mt3_pytorch.py and yourmt3.py, which pass an explicit device straight
+    # to torch and let `.to(device)` raise naturally when it's unavailable.
+    if is_cuda_request:
         try:
             import torch
-            if torch.cuda.is_available():
-                try:
-                    test_tensor = torch.zeros(1, device="cuda")
-                    del test_tensor
-                    return "cuda"
-                except Exception as e:
-                    warnings.warn(
-                        f"CUDA requested but failed: {e}. Falling back to CPU.",
-                        UserWarning
-                    )
-                    return "cpu"
-            else:
-                warnings.warn(
-                    "CUDA requested but not available. Falling back to CPU.",
-                    UserWarning
-                )
-                return "cpu"
-        except ImportError:
-            warnings.warn(
-                "CUDA requested but PyTorch not installed. Falling back to CPU.",
-                UserWarning
+        except ImportError as e:
+            raise RuntimeError(
+                "CUDA requested but PyTorch is not installed."
+            ) from e
+
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                f"Device '{device_hint}' was explicitly requested but CUDA is "
+                "not available. Pass device='cpu' or device='auto' to allow "
+                "CPU fallback."
             )
-            return "cpu"
+
+        try:
+            test_tensor = torch.zeros(1, device=device_hint)
+            del test_tensor
+            return device_hint
+        except Exception as e:
+            raise RuntimeError(
+                f"Device '{device_hint}' was explicitly requested but failed "
+                f"to initialize: {e}"
+            ) from e
 
     return device_hint
