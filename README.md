@@ -574,9 +574,13 @@ with MT3Session(model="accurate", device="cuda") as session:
     midi = session.infer(audio, sr=16000)
 ```
 
-Call `load()`, `infer()`, `release()`, `close()`, `status`, and `cache_info()`
-explicitly when a context manager is not convenient. Existing `load_model()`
-and `transcribe()` one-shot APIs remain available for compatibility. Profile
+`load()` is idempotent and session-owned (it deliberately bypasses the legacy
+one-shot global model cache); `release()` permits a later reload, and `close()`
+is terminal and idempotent. `cache_info()` resolves the same custom/default
+checkpoint path without downloading or creating directories. Devices accept
+legacy `auto` plus explicit `cpu`, `cuda`, `cuda:N`, and `mps`; unavailable
+explicit accelerators raise. Existing `load_model()` and `transcribe()`
+one-shot APIs retain their opt-in global cache for compatibility. Profile
 checkpoint metadata is package-owned in `mt3_infer/config/checkpoints.toml`.
 
 For issues and questions:

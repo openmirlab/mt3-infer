@@ -4,6 +4,17 @@ All notable changes to MT3-Infer will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Strict explicit device validation for `cpu`, `cuda`, `cuda:N`, and `mps`,
+  while preserving the existing automatic CUDA-or-CPU fallback.
+
+### Changed
+- `MT3Session` now owns a non-global runtime: `release()` genuinely drops its
+  adapter and permits reload, while terminal/idempotent `close()` prevents a
+  later load. The legacy one-shot API keeps its existing opt-in global cache.
+- Session cache inspection now shares the TOML profile resolver used for load
+  paths and performs no download or filesystem materialization.
+
 ### Fixed
 - **`transformers>=4.35.0` with no upper bound broke YourMT3 on a fresh
   install**: transformers 5.x removed `transformers.utils.model_parallel_utils`

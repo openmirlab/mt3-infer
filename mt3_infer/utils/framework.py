@@ -152,13 +152,15 @@ def get_device(device_hint: Optional[str] = None) -> str:
     if device_hint is None:
         device_hint = "auto"
 
+    if not isinstance(device_hint, str):
+        raise ValueError("Invalid device. Must be 'cuda', 'cuda:N', 'cpu', 'mps', or 'auto'.")
     device_hint = device_hint.lower()
 
     is_cuda_request = device_hint == "cuda" or device_hint.startswith("cuda:")
 
-    if device_hint not in ("cpu", "auto") and not is_cuda_request:
+    if device_hint not in ("cpu", "auto", "mps") and not is_cuda_request:
         raise ValueError(
-            f"Invalid device: {device_hint}. Must be 'cuda', 'cuda:N', 'cpu', or 'auto'."
+            f"Invalid device: {device_hint}. Must be 'cuda', 'cuda:N', 'cpu', 'mps', or 'auto'."
         )
 
     if device_hint == "auto":
@@ -188,6 +190,14 @@ def get_device(device_hint: Optional[str] = None) -> str:
         )
         return "cpu"
 
+    if device_hint == "mps":
+        import torch
+
+        mps = getattr(torch.backends, "mps", None)
+        if mps is None or not mps.is_available():
+            raise RuntimeError("Device 'mps' was explicitly requested but MPS is not available.")
+        return "mps"
+
     # User explicitly requested cuda (or cuda:N) - honor it or raise.
     # Unlike "auto", an explicit request is never silently downgraded to
     # CPU: that would override the caller's stated choice. This mirrors
@@ -201,21 +211,20 @@ def get_device(device_hint: Optional[str] = None) -> str:
                 "CUDA requested but PyTorch is not installed."
             ) from e
 
+        index = None
+        if device_hint.startswith("cuda:"):
+            index = device_hint[5:]
+            if not index.isdigit():
+                raise ValueError("CUDA device index must be a non-negative integer")
         if not torch.cuda.is_available():
             raise RuntimeError(
                 f"Device '{device_hint}' was explicitly requested but CUDA is "
                 "not available. Pass device='cpu' or device='auto' to allow "
                 "CPU fallback."
             )
+        if index is not None:
+            if int(index) >= torch.cuda.device_count():
+                raise RuntimeError(f"CUDA device index {index} is not available")
+        return device_hint
 
-        try:
-            test_tensor = torch.zeros(1, device=device_hint)
-            del test_tensor
-            return device_hint
-        except Exception as e:
-            raise RuntimeError(
-                f"Device '{device_hint}' was explicitly requested but failed "
-                f"to initialize: {e}"
-            ) from e
-
-    return device_hint
+    return "cpu"

@@ -49,6 +49,7 @@ dependencies = [
     "mir-eval>=0.8.2",
     "soxr>=1.0.0",
     "absl-py>=2.0.0",
+    "tomli>=2.0.0 ; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from .checkpoint_catalog import cache_key, get_profile
+from .checkpoint_catalog import cache_key, get_profile, resolve_checkpoint_path
+from .utils.framework import get_device
 
 
 class MT3Session:
@@ -37,15 +38,19 @@ class MT3Session:
         return dict(self._component_status)
 
     def load(self) -> "MT3Session":
+        if self._status == "closed":
+            raise RuntimeError("cannot load a closed MT3Session")
         if self._status == "ready":
             return self
         self._status = "loading"
         self._component_status[self.model] = "loading"
         try:
             from .api import load_model
+            resolved_path = resolve_checkpoint_path(self.model, self.checkpoint_path)
+            self.device = get_device(self.device)
             self._adapter = load_model(
-                self.model, checkpoint_path=self.checkpoint_path,
-                device=self.device, auto_download=self.auto_download,
+                self.model, checkpoint_path=str(resolved_path) if resolved_path else None,
+                device=self.device, auto_download=self.auto_download, cache=False,
                 **self.model_kwargs,
             )
             self._status = "ready"
@@ -61,10 +66,12 @@ class MT3Session:
             raise RuntimeError("MT3Session must be ready; call load() before infer()")
         return self._adapter.transcribe(audio, sr=sr, **kwargs)
 
-    def release(self) -> None:
+    def release(self) -> "MT3Session":
+        if self._status == "closed":
+            return self
         adapter = self._adapter
         if adapter is not None:
-            model_obj = getattr(adapter, "model", None)
+            model_obj = getattr(adapter, "model", getattr(adapter, "_model", None))
             if model_obj is not None and hasattr(model_obj, "cpu"):
                 model_obj.cpu()
             # Adapters differ in their private storage; dropping the reference
@@ -72,16 +79,22 @@ class MT3Session:
             self._adapter = None
         self._status = "released"
         self._component_status[self.model] = "released"
+        return self
 
-    def close(self) -> None:
-        self.release()
+    def close(self) -> "MT3Session":
+        if self._status != "closed":
+            self.release()
+            self._status = "closed"
+            self._component_status[self.model] = "closed"
+        return self
 
     def cache_info(self) -> Dict[str, Any]:
         profile = get_profile(self.model)
+        path = resolve_checkpoint_path(self.model, self.checkpoint_path)
         return {
             "package": "mt3-infer", "model": self.model, "backend": self.backend,
             "cache_key": cache_key(self.model, backend=self.backend),
-            "checkpoint_path": self.checkpoint_path or profile.get("path"),
+            "checkpoint_path": str(path) if path is not None else None,
             "checkpoint_url": profile.get("url"), "sha256": profile.get("sha256"),
             "status": self._status, "model_loaded": self._adapter is not None,
             "components": self.component_status,

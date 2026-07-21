@@ -100,6 +100,24 @@ def test_get_device_explicit_cuda_indexed_accepted_when_available():
     assert device == "cuda:0"
 
 
+def test_get_device_preserves_cuda_index_without_allocating(monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 2)
+    assert get_device("cuda:1") == "cuda:1"
+
+
+def test_get_device_rejects_unavailable_mps(monkeypatch):
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+    with pytest.raises(RuntimeError, match="MPS"):
+        get_device("mps")
+
+
+def test_get_device_rejects_invalid_cuda_index_before_availability(monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(ValueError, match="index"):
+        get_device("cuda:bad")
+
+
 def test_get_device_rejects_unknown_device_string():
     """Non-cuda, non-cpu, non-auto strings are still rejected outright --
     the widening is scoped to the cuda:N family only.

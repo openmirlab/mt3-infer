@@ -7,6 +7,7 @@ package's profile metadata and deterministic cache identity.
 from __future__ import annotations
 
 from hashlib import sha256
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -43,4 +44,22 @@ def cache_key(model: str, *, backend: Optional[str] = None,
     return sha256(material.encode()).hexdigest()[:16]
 
 
-__all__ = ["checkpoint_config_path", "load_checkpoint_config", "get_profile", "cache_key"]
+def resolve_checkpoint_path(model: str, checkpoint_path: Optional[str] = None) -> Optional[Path]:
+    """Resolve the session loader path without downloading or creating it."""
+    raw_path = checkpoint_path or get_profile(model).get("path")
+    if raw_path is None:
+        return None
+    path = Path(raw_path).expanduser()
+    if path.is_absolute():
+        return path
+    env_dir = os.environ.get("MT3_CHECKPOINT_DIR")
+    if env_dir:
+        base = Path(env_dir).expanduser()
+        try:
+            return base / path.relative_to(".mt3_checkpoints")
+        except ValueError:
+            return base / path
+    return Path.cwd() / path
+
+
+__all__ = ["checkpoint_config_path", "load_checkpoint_config", "get_profile", "cache_key", "resolve_checkpoint_path"]

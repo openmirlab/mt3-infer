@@ -16,6 +16,7 @@ import yaml
 from mt3_infer.base import MT3Base
 from mt3_infer.exceptions import ModelNotFoundError, CheckpointDownloadError
 from mt3_infer.utils.download import download_checkpoint
+from mt3_infer.utils.framework import get_device
 
 # Global model cache
 _MODEL_CACHE: Dict[str, MT3Base] = {}
@@ -120,8 +121,9 @@ def load_model(
         >>> # Disable automatic filtering for MT3-PyTorch
         >>> model = load_model("mt3_pytorch", auto_filter=False)
     """
-    # Resolve model name/alias
+    # Resolve model name/alias and validate device once for every adapter.
     model_name = _resolve_model_name(model)
+    device = get_device(device)
 
     # Check cache
     cache_key = f"{model_name}:{checkpoint_path or 'default'}:{device}"
