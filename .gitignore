@@ -62,3 +62,6 @@ checkpoints/
 
 # Local environment-specific checkpoints (developer overrides)
 .env_checkpoints/
+
+# docs/ is kept local-only by policy (not tracked on GitHub) -- see CLAUDE.md
+docs/

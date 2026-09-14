@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+**`docs/`** is local-only by policy (2026-09-14): kept on disk, gitignored,
+never pushed to GitHub.
+
 Guidance for Claude Code (or any agent) working in this repository. Follows
 the [openmirlab org constitution](https://github.com/openmirlab/openmirlab-skills/blob/main/plugins/openmirlab/CLAUDE.md).
 

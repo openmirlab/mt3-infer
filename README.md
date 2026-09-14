@@ -398,7 +398,7 @@ Extra smoke tests and tooling live in `examples/diagnostics/`:
 
 Run them via `uv run python examples/diagnostics/<script>.py` after setting any needed environment variables.
 
-See also [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues.
+See also `docs/TROUBLESHOOTING.md` (local-only, not on GitHub) for common issues.
 
 ---
 
@@ -436,14 +436,14 @@ mt3_infer/
 ### For Users
 - **[Main README](README.md)** - This file
 - **[Examples](examples/)** - Usage examples
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[Benchmarks](docs/BENCHMARKS.md)** - Performance benchmarks
+- **Troubleshooting** (`docs/TROUBLESHOOTING.md`, local-only, not on GitHub) - Common issues and solutions
+- **Benchmarks** (`docs/BENCHMARKS.md`, local-only, not on GitHub) - Performance benchmarks
 
 ### For Developers
-- **[Documentation Index](docs/README.md)** - Complete docs navigation
-- **[API Specification](docs/dev/SPEC.md)** - Formal API spec
-- **[Design Principles](docs/dev/PRINCIPLES.md)** - Development guidelines
-- **[Download Guide](docs/dev/DOWNLOAD.md)** - Internal download documentation
+- **Documentation Index** (`docs/README.md`, local-only, not on GitHub) - Complete docs navigation
+- **API Specification** (`docs/dev/SPEC.md`, local-only, not on GitHub) - Formal API spec
+- **Design Principles** (`docs/dev/PRINCIPLES.md`, local-only, not on GitHub) - Development guidelines
+- **Download Guide** (`docs/dev/DOWNLOAD.md`, local-only, not on GitHub) - Internal download documentation
 
 ---
 
