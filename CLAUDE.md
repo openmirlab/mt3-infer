@@ -31,7 +31,7 @@ mt3_infer/
     yourmt3/        -- 17K+ LOC, Apache-2.0, vendored from mimbres/YourMT3 (the main worktree)
   config/checkpoints.yaml            -- model registry: paths, download sources, sha256, metadata
   config/external_integrations.yaml  -- provenance log (source repo/commit/license per model)
-  tests/                              -- pytest, see "Testing" below
+tests/                                -- pytest, see "Testing" below (org-standard: repo root, not mt3_infer/tests)
 ```
 
 ## Hard constraint: `models/mt3_pytorch/` is license-frozen
@@ -93,7 +93,7 @@ unnecessary once `utils` itself resolves).
 
 ## Testing
 
-- `pytest mt3_infer/tests/` runs the fast unit/smoke suite (no checkpoint
+- `pytest tests/` runs the fast unit/smoke suite (no checkpoint
   downloads, no GPU). A `network` pytest marker gates checkpoint-source
   liveness checks; they're excluded by default (`-m "not network"` in
   `pyproject.toml`'s addopts) and run explicitly with `-m network`.

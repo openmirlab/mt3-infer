@@ -30,7 +30,7 @@ jobs:
         run: uv sync --extra dev --extra full
 
       - name: Run unit tests
-        run: uv run pytest mt3_infer/tests/ -q
+        run: uv run pytest tests/ -q
 
   publish:
     needs: [test]

@@ -147,7 +147,7 @@ include = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["mt3_infer/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -166,7 +166,7 @@ addopts = [
 [tool.coverage.run]
 source = ["mt3_infer"]
 omit = [
-    "mt3_infer/tests/*",
+    "tests/*",
     "mt3_infer/__pycache__/*",
 ]
 
