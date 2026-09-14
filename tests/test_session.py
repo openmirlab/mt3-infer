@@ -52,6 +52,35 @@ def test_session_requires_explicit_load(monkeypatch):
         session.infer(np.zeros(8, dtype=np.float32))
 
 
+def test_session_infer_never_reloads_across_calls(monkeypatch):
+    """Constitution art. 4a's 2026-07-19 amendment: a session class existing by
+    name, or even load() being idempotent under repeated load() calls, is not
+    evidence that infer() itself avoids reloading. Prove it directly: two
+    sequential infer() calls on one ready session must trigger exactly one
+    load_model() call, and a subsequent load() must still be a no-op."""
+    built = []
+
+    def load(*args, **kwargs):
+        adapter = _Adapter()
+        built.append(adapter)
+        return adapter
+
+    monkeypatch.setattr(api, "load_model", load)
+    session = MT3Session("fast", auto_download=False, device="cpu").load()
+    assert len(built) == 1
+
+    first = session.infer(np.zeros(8, dtype=np.float32))
+    second = session.infer(np.zeros(8, dtype=np.float32))
+
+    assert len(built) == 1, "infer() must never reload the model"
+    assert first[1] == second[1] == 16000
+
+    # load() on an already-ready session stays a no-op too.
+    session.load()
+    assert len(built) == 1
+    session.close()
+
+
 def test_profiles_have_independent_deterministic_cache_keys():
     small = MT3Session("fast")
     large = MT3Session("accurate")
