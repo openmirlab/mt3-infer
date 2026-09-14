@@ -7,6 +7,12 @@ All notable changes to MT3-Infer will be documented in this file.
 ### Added
 - Strict explicit device validation for `cpu`, `cuda`, `cuda:N`, and `mps`,
   while preserving the existing automatic CUDA-or-CPU fallback.
+- `test_session_infer_never_reloads_across_calls`: a call-counting regression
+  test proving two sequential `MT3Session.infer()` calls on one loaded
+  session trigger exactly one `load_model()` call (org CLAUDE.md art. 4a's
+  2026-07-19 amendment -- a session class satisfying the load/infer/release
+  shape is not evidence `infer()` itself avoids reloading). No implementation
+  bug was found; `MT3Session.infer()` already never touched the load path.
 
 ### Changed
 - `MT3Session` now owns a non-global runtime: `release()` genuinely drops its
@@ -14,6 +20,18 @@ All notable changes to MT3-Infer will be documented in this file.
   later load. The legacy one-shot API keeps its existing opt-in global cache.
 - Session cache inspection now shares the TOML profile resolver used for load
   paths and performs no download or filesystem materialization.
+- **Test layout normalized to the org convention**: moved `mt3_infer/tests/`
+  to `tests/` at the repo root (matching madmom-infer, lv-chordia,
+  skey-infer). Verbatim move; `pyproject.toml` testpaths/coverage-omit and
+  both GitHub workflows now point at the new path. Side effect: the wheel no
+  longer bundles test files (they previously matched hatchling's
+  `mt3_infer/**/*.py` include).
+- **Python floor raised to >=3.10** (Python 3.9 reached EOL 2025-10; org
+  CLAUDE.md art. 3 sets 3.10 as the floor for new packages). Dropped the now
+  unreachable `torchaudio<2.9.0 ; python_version < '3.10'` ceiling and the
+  "3.9" classifier/CI matrix entry; `torchaudio>=2.4.0` is now a single
+  floor everywhere it's declared. Verified `uv lock`/`uv sync` resolve
+  cleanly against torch 2.13.0.
 
 ### Fixed
 - **`transformers>=4.35.0` with no upper bound broke YourMT3 on a fresh
