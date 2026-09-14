@@ -3,7 +3,7 @@ name = "mt3-infer"
 dynamic = ["version"]
 description = "Unified, inference-only toolkit for MT3 model family (Magenta MT3, MR-MT3, MT3-PyTorch, YourMT3)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
     { name = "MT3-Infer Contributors" }
@@ -17,7 +17,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -32,14 +31,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "torch>=2.4.0",
     "torchvision>=0.19.0",
-    # torchaudio publishes no requires-python metadata (PyPI: requires_python is
-    # None for every release), so uv's lockfile resolver can't tell on its own
-    # that 2.9.0+ dropped cp39 wheels -- it would otherwise pick one universal
-    # "latest" version for every supported Python bucket and silently break
-    # `uv sync` on 3.9 (resolve succeeds, install fails: no wheel for cp39).
-    # Scope the last cp39-compatible release explicitly for that bucket.
-    "torchaudio>=2.4.0,<2.9.0 ; python_version < '3.10'",
-    "torchaudio>=2.4.0 ; python_version >= '3.10'",
+    "torchaudio>=2.4.0",
     "transformers>=4.35.0",
     "librosa>=0.9.1",
     "pretty-midi>=0.2.10",
@@ -68,11 +60,7 @@ full = [
 torch = [
     "torch>=2.4.0",
     "torchvision>=0.19.0",
-    # See the torchaudio comment in [project.dependencies] above: no
-    # requires-python metadata upstream, so the Python-version split is
-    # explicit here too.
-    "torchaudio>=2.4.0,<2.9.0 ; python_version < '3.10'",
-    "torchaudio>=2.4.0 ; python_version >= '3.10'",
+    "torchaudio>=2.4.0",
 ]
 
 # TensorFlow backend (aligned with worzpro-demo)
@@ -100,8 +88,7 @@ tensorflow = [
 all = [
     "torch>=2.4.0",
     "torchvision>=0.19.0",
-    "torchaudio>=2.4.0,<2.9.0 ; python_version < '3.10'",
-    "torchaudio>=2.4.0 ; python_version >= '3.10'",
+    "torchaudio>=2.4.0",
     "tensorflow>=2.16.0",
 ]
 
@@ -183,7 +170,7 @@ exclude_lines = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -204,7 +191,7 @@ ignore = [
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -225,4 +212,4 @@ ignore_missing_imports = true
 
 [tool.black]
 line-length = 100
-target-version = ["py39"]
+target-version = ["py310"]
