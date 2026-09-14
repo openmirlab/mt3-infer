@@ -106,10 +106,34 @@ def test_get_device_preserves_cuda_index_without_allocating(monkeypatch):
     assert get_device("cuda:1") == "cuda:1"
 
 
-def test_get_device_rejects_unavailable_mps(monkeypatch):
-    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
-    with pytest.raises(RuntimeError, match="MPS"):
+def test_get_device_rejects_mps_outright(monkeypatch):
+    """Apple MLX/MPS backends are permanently out of scope for this project
+    (org canon art. 4b). device="mps" must raise ValueError unconditionally
+    -- even when MPS is actually available -- not RuntimeError only when
+    unavailable (the old, pre-removal behavior).
+    """
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
+    with pytest.raises(ValueError, match="mps"):
         get_device("mps")
+
+
+def test_get_device_rejects_mps_when_unavailable_too(monkeypatch):
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+    with pytest.raises(ValueError, match="mps"):
+        get_device("mps")
+
+
+def test_get_device_auto_never_resolves_to_mps_even_if_available(monkeypatch):
+    """"auto" must never select mps, even when torch.backends.mps.is_available()
+    would return True. The auto-detect path only ever considers CUDA-or-CPU.
+    """
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
+
+    with pytest.warns(UserWarning):
+        device = get_device("auto")
+
+    assert device == "cpu"
 
 
 def test_get_device_rejects_invalid_cuda_index_before_availability(monkeypatch):

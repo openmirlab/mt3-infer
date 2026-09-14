@@ -131,7 +131,10 @@ def get_device(device_hint: Optional[str] = None) -> str:
         Normalized device string: "cuda", "cuda:N", or "cpu".
 
     Raises:
-        ValueError: Invalid device hint.
+        ValueError: Invalid device hint, including "mps" -- Apple MLX/MPS
+            backends are permanently out of scope for this project (org
+            canon art. 4b) and are rejected outright, regardless of actual
+            MPS availability.
         RuntimeError: An explicitly-requested "cuda"/"cuda:N" device is not
             usable (CUDA unavailable, or GPU initialization failed). Only
             "auto" falls back to CPU; an explicit request is never silently
@@ -153,14 +156,21 @@ def get_device(device_hint: Optional[str] = None) -> str:
         device_hint = "auto"
 
     if not isinstance(device_hint, str):
-        raise ValueError("Invalid device. Must be 'cuda', 'cuda:N', 'cpu', 'mps', or 'auto'.")
+        raise ValueError("Invalid device. Must be 'cuda', 'cuda:N', 'cpu', or 'auto'.")
     device_hint = device_hint.lower()
 
     is_cuda_request = device_hint == "cuda" or device_hint.startswith("cuda:")
 
-    if device_hint not in ("cpu", "auto", "mps") and not is_cuda_request:
+    if device_hint == "mps":
         raise ValueError(
-            f"Invalid device: {device_hint}. Must be 'cuda', 'cuda:N', 'cpu', 'mps', or 'auto'."
+            "Device 'mps' is not supported by mt3-infer. Apple MLX/MPS backends "
+            "are permanently out of scope for this project (org canon art. 4b). "
+            "Supported devices: 'cuda', 'cuda:N', 'cpu', or 'auto'."
+        )
+
+    if device_hint not in ("cpu", "auto") and not is_cuda_request:
+        raise ValueError(
+            f"Invalid device: {device_hint}. Must be 'cuda', 'cuda:N', 'cpu', or 'auto'."
         )
 
     if device_hint == "auto":
@@ -189,14 +199,6 @@ def get_device(device_hint: Optional[str] = None) -> str:
             UserWarning
         )
         return "cpu"
-
-    if device_hint == "mps":
-        import torch
-
-        mps = getattr(torch.backends, "mps", None)
-        if mps is None or not mps.is_available():
-            raise RuntimeError("Device 'mps' was explicitly requested but MPS is not available.")
-        return "mps"
 
     # User explicitly requested cuda (or cuda:N) - honor it or raise.
     # Unlike "auto", an explicit request is never silently downgraded to

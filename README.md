@@ -578,8 +578,10 @@ with MT3Session(model="accurate", device="cuda") as session:
 one-shot global model cache); `release()` permits a later reload, and `close()`
 is terminal and idempotent. `cache_info()` resolves the same custom/default
 checkpoint path without downloading or creating directories. Devices accept
-legacy `auto` plus explicit `cpu`, `cuda`, `cuda:N`, and `mps`; unavailable
-explicit accelerators raise. Existing `load_model()` and `transcribe()`
+legacy `auto` plus explicit `cpu`, `cuda`, and `cuda:N`; unavailable
+explicit accelerators raise, and `mps` is rejected outright (Apple MLX/MPS
+backends are permanently out of scope for this project). Existing
+`load_model()` and `transcribe()`
 one-shot APIs retain their opt-in global cache for compatibility. Profile
 checkpoint metadata is package-owned in `mt3_infer/config/checkpoints.toml`.
 

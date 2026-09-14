@@ -5,8 +5,16 @@ All notable changes to MT3-Infer will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- Strict explicit device validation for `cpu`, `cuda`, `cuda:N`, and `mps`,
-  while preserving the existing automatic CUDA-or-CPU fallback.
+- Strict explicit device validation for `cpu`, `cuda`, and `cuda:N`, while
+  preserving the existing automatic CUDA-or-CPU fallback.
+
+### Removed
+- Apple MPS device support: `device="mps"` now raises `ValueError`
+  unconditionally (previously resolved to `"mps"` when available, or raised
+  `RuntimeError` only when unavailable). MLX/MPS backends are permanently
+  out of scope for this project (org canon art. 4b, 2026-09-14). The
+  supported device vocabulary is exactly `"auto"`, `"cpu"`, `"cuda"`, and
+  `"cuda:N"`.
 - `test_session_infer_never_reloads_across_calls`: a call-counting regression
   test proving two sequential `MT3Session.infer()` calls on one loaded
   session trigger exactly one `load_model()` call (org CLAUDE.md art. 4a's
