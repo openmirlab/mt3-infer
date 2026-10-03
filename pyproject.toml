@@ -140,6 +140,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
     "network: requires internet access (checkpoint URL/repo liveness checks); excluded by default, run with -m network",
+    "real_weights: opt-in real-checkpoint CPU transcription against committed original MIDI",
 ]
 addopts = [
     "-v",

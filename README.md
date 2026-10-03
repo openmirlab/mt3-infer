@@ -95,9 +95,11 @@ YourMT3's [YourMT3+ paper](https://arxiv.org/abs/2407.04822) (MLSP 2024).
 - **CLI Tool**: `mt3-infer` command-line interface
 - **Reproducible**: Pinned dependencies, verified checkpoints
 
-**Current status:** all three PyTorch-based backends (MR-MT3, MT3-PyTorch,
-YourMT3) are implemented, tested, and installable from PyPI today. What's
-not yet supported: the original Magenta MT3 (JAX/Flax) backend is not
+**Current status:** MR-MT3 and MT3-PyTorch transcribe with real checkpoints
+under the currently resolved Transformers 5.13.1. YourMT3 transcribes under
+Transformers 4.43.4 but fails under 5.13.1 (`get_head_mask` is missing); its
+newer-version compatibility work is pending. The original Magenta MT3
+(JAX/Flax) backend is not
 wrapped (see Scope), and there's no batch-processing API, ONNX export, or
 streaming inference — transcription is single-file, in-process, one model
 at a time.
@@ -397,6 +399,13 @@ Extra smoke tests and tooling live in `examples/diagnostics/`:
 - `test_yourmt3.py` – Full audio-to-MIDI flow for the YourMT3 MoE model
 
 Run them via `uv run python examples/diagnostics/<script>.py` after setting any needed environment variables.
+
+An opt-in, SHA-verified real-checkpoint baseline for all three backends is
+recorded in `tests/golden/mt3/`. Set `MT3_REAL_GOLDEN=1` and
+`MT3_CHECKPOINT_DIR` to replay it with `pytest tests/test_real_golden.py` on
+the recorded CPU profile. YourMT3's original baseline uses Transformers
+4.43.4; the test intentionally fails under the current 5.13.1 until its
+compatibility is repaired. See the fixture README for exact commands.
 
 See also `docs/TROUBLESHOOTING.md` (local-only, not on GitHub) for common issues.
 
