@@ -200,6 +200,9 @@ class YourMT3Adapter(MT3Base):
                 device=self.device_str,
                 task_name=task_name
             )
+            from .yourmt3_transformers_compat import adapt_yourmt3_transformers
+
+            adapt_yourmt3_transformers(self.model)
 
             # Verify model is loaded
             if self.model is None:
