@@ -14,8 +14,9 @@ independent MT3 (music transcription) model implementations behind one
 (`mt3_infer/api.py`: `transcribe()`, `load_model()`, `list_models()`,
 `get_model_info()`, `download_model()`). Entry point: `mt3_infer/__init__.py`.
 
-**Scope / status:** shipped on PyPI, all three PyTorch backends (`mr_mt3`,
-`mt3_pytorch`, `yourmt3`) working. Magenta MT3 (JAX/Flax) is intentionally
+**Scope / status:** shipped on PyPI. `mr_mt3` and `mt3_pytorch` work with
+real weights under Transformers 5.13.1; `yourmt3` works with real weights
+under 4.43.4 but fails under 5.13.1. Magenta MT3 (JAX/Flax) is intentionally
 not wrapped — see README's Scope section; the `jax` extra in
 `pyproject.toml` is commented out, not a committed roadmap item. No
 training path, no batch/streaming/ONNX API exist in this repo; if that
@@ -61,15 +62,16 @@ not a modification of working vendored code.
 | `mt3_pytorch` | 2,193 | none upstream (frozen, see above) | Works; transformers v4.44+/v5 compat fixed (commit 83180b7) |
 | `yourmt3` | ~10,400 (post-strip) | Apache-2.0 | Main worktree; see gotcha below |
 
-**Gotcha: yourmt3 needs an older `transformers`.** As of this writing the
-default install resolves `transformers>=4.35.0` (currently 4.57.x in a fresh
-`uv sync`), which works for `mr_mt3` and `mt3_pytorch` but breaks
-`yourmt3`'s vendored T5 forward pass (`cache_position` ends up `None` ->
-`TypeError` in `transformers/models/t5/modeling_t5.py`). This is a
-pre-existing gap, not something touched by the Lightning-shim work -- commit
-83180b7 fixed the same class of transformers-API-drift issue for `mr_mt3`
-and `mt3_pytorch` but never touched `yourmt3/model/t5mod.py`. Until someone
-patches that, testing yourmt3 end-to-end needs an older pin, e.g.:
+**Gotcha: yourmt3 needs an older `transformers`.** The current resolved
+5.13.1 works for `mr_mt3` and `mt3_pytorch` but fails in
+`yourmt3/model/perceiver_mod.py` because the base class no longer supplies
+`get_head_mask`. A diagnostic-only restoration of that old method advanced
+to a separate tuple-index failure in `yourmt3/model/t5mod.py`. The untouched
+default branch successfully transcribed real audio under 4.43.4; its MIDI,
+audio/checkpoint hashes, and environment are committed in
+`tests/golden/mt3/`. Replay with `MT3_REAL_GOLDEN=1` and
+`MT3_CHECKPOINT_DIR=/path/to/.mt3_checkpoints` on the recorded CPU profile.
+Until compatibility is repaired, testing yourmt3 end-to-end needs 4.43.4:
 ```bash
 uv run --with "transformers==4.43.4" python your_script.py
 ```

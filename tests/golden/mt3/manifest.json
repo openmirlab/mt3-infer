@@ -1,0 +1,571 @@
+{
+  "source_head": "3675ad8",
+  "source_audio": "assets/HappySounds_120bpm_Drums_drum_120BPM_BANDLAB.wav",
+  "source_sha256": "8e0546ca8bdc7c611949c7b1902ba91e91a78cc1f9a868b6f44aadb9bd5a1be7",
+  "audio_float_sha256": "491735cd10f8c0b9d39974580263675aab9b6cd76b2df4f77d69fbd5c02d68fd",
+  "audio_samples": 64000,
+  "sample_rate": 16000,
+  "profile": {
+    "python": "3.10.18",
+    "torch": "2.13.0+cu130",
+    "numpy": "2.2.6",
+    "librosa": "0.11.0",
+    "device": "cpu",
+    "torch_threads": 4
+  },
+  "models": {
+    "mr_mt3": {
+      "midi_sha256": "5a329fa7597a7df34cb39515fc8a2f2e4eca4f86a5c331dd83faeb6e8b88ce6a",
+      "messages": [
+        {
+          "track": 0,
+          "message": "MetaMessage('set_tempo', tempo=500000, time=0)"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=36 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=57"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=52"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=37 velocity=127 time=4"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=105"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=36 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=36 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=36 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=36 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=37 velocity=0 time=4"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=37 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=36 velocity=0 time=105"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=36 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=37 velocity=0 time=21"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=36 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=35"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=52"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=37 velocity=127 time=4"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=105"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=36 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=110"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=37 velocity=0 time=4"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=37 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=36 velocity=0 time=105"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=37 velocity=0 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_on channel=9 note=42 velocity=127 time=0"
+        },
+        {
+          "track": 0,
+          "message": "note_off channel=9 note=42 velocity=0 time=4"
+        },
+        {
+          "track": 0,
+          "message": "MetaMessage('end_of_track', time=0)"
+        }
+      ],
+      "checkpoint_sha256": "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f",
+      "transformers": "5.13.1"
+    },
+    "mt3_pytorch": {
+      "midi_sha256": "fe4222b54e6c09956af2190a5c39ae6c94072cf285415992d829acac4606d4b2",
+      "messages": [
+        {
+          "track": 0,
+          "message": "MetaMessage('set_tempo', tempo=500000, time=0)"
+        },
+        {
+          "track": 0,
+          "message": "MetaMessage('time_signature', numerator=4, denominator=4, clocks_per_click=24, notated_32nd_notes_per_beat=8, time=0)"
+        },
+        {
+          "track": 0,
+          "message": "MetaMessage('end_of_track', time=1)"
+        },
+        {
+          "track": 1,
+          "message": "program_change channel=0 program=32 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=127 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=0 time=31"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=66 velocity=127 time=211"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=66 velocity=0 time=26"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=127 time=198"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=127 time=97"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=66 velocity=127 time=105"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=66 velocity=0 time=18"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=127 time=92"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=54 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=58 velocity=127 time=427"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=0 note=58 velocity=0 time=330"
+        },
+        {
+          "track": 1,
+          "message": "MetaMessage('end_of_track', time=1)"
+        }
+      ],
+      "checkpoint_sha256": "b8a3807ed265059abd25ad7f68142c06c35e8f6144dcaa45bd55946a3745398f",
+      "transformers": "5.13.1"
+    },
+    "yourmt3": {
+      "midi_sha256": "68b77225b8bf9772224e68c5fee2979e4954244c9df981b834ba4d4ea1cebec5",
+      "messages": [
+        {
+          "track": 0,
+          "message": "MetaMessage('end_of_track', time=0)"
+        },
+        {
+          "track": 1,
+          "message": "MetaMessage('track_name', name='Drums', time=0)"
+        },
+        {
+          "track": 1,
+          "message": "program_change channel=9 program=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=36 velocity=100 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=36 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=106"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=106"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=37 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=37 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=36 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=36 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=36 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=36 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=37 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=37 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=36 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=36 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=115"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=9"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=106"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=37 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=37 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=36 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=36 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=37 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=37 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=0"
+        },
+        {
+          "track": 1,
+          "message": "note_on channel=9 note=42 velocity=100 time=230"
+        },
+        {
+          "track": 1,
+          "message": "note_off channel=9 note=42 velocity=0 time=10"
+        },
+        {
+          "track": 1,
+          "message": "MetaMessage('end_of_track', time=0)"
+        }
+      ],
+      "checkpoint_sha256": "ae38e415c79efd5592dcb9b658cdb99ddb11d4c4e1eaa364cab04a052473fc25",
+      "transformers": "4.43.4"
+    }
+  }
+}
