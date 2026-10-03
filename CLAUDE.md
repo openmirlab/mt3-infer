@@ -62,19 +62,16 @@ not a modification of working vendored code.
 | `mt3_pytorch` | 2,193 | none upstream (frozen, see above) | Works; transformers v4.44+/v5 compat fixed (commit 83180b7) |
 | `yourmt3` | ~10,400 (post-strip) | Apache-2.0 | Main worktree; see gotcha below |
 
-**Gotcha: yourmt3 needs an older `transformers`.** The current resolved
-5.13.1 works for `mr_mt3` and `mt3_pytorch` but fails in
-`yourmt3/model/perceiver_mod.py` because the base class no longer supplies
-`get_head_mask`. A diagnostic-only restoration of that old method advanced
-to a separate tuple-index failure in `yourmt3/model/t5mod.py`. The untouched
-default branch successfully transcribed real audio under 4.43.4; its MIDI,
-audio/checkpoint hashes, and environment are committed in
-`tests/golden/mt3/`. Replay with `MT3_REAL_GOLDEN=1` and
-`MT3_CHECKPOINT_DIR=/path/to/.mt3_checkpoints` on the recorded CPU profile.
-Until compatibility is repaired, testing yourmt3 end-to-end needs 4.43.4:
-```bash
-uv run --with "transformers==4.43.4" python your_script.py
-```
+**YourMT3 Transformers compatibility.** The original default branch required
+4.43.4: Transformers 5.13.1 removed `get_head_mask` and the legacy per-layer
+T5 cache tuple contract. `mt3_infer/adapters/yourmt3_transformers_compat.py`
+translates these contracts on the loaded YourMT3 model instance. It leaves
+Transformers and the vendored model source untouched, and retains 4.43.4
+behavior. The original MIDI, audio/checkpoint hashes, and environment are in
+`tests/golden/mt3/`. Replay all three backends under 5.13.1 with
+`MT3_REAL_GOLDEN=1 MT3_CHECKPOINT_DIR=/path/to/.mt3_checkpoints pytest
+tests/test_real_golden.py`; replay YourMT3 under isolated 4.43.4 for the old
+profile. The full MIDI messages and file bytes must match both.
 
 **yourmt3 no longer needs `pytorch_lightning`/`lightning` at all.** Its
 model class extends a vendored `LightningModuleShim`
