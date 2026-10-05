@@ -121,3 +121,7 @@ pyrubberband; core dependencies alone are enough for `mr_mt3` and
 `mt3_pytorch`. Package version is single-sourced in `mt3_infer/__about__.py`
 (`pyproject.toml` reads it via `[tool.hatch.version]`) -- don't hand-edit a
 version number in `pyproject.toml` or `mt3_infer/__init__.py` directly.
+
+## Distribution policy (2026-10-05)
+
+Install the current source from `https://github.com/openmirlab/mt3-infer`. GitHub release workflows verify and build distributions but do not upload to PyPI. Existing PyPI versions, where any exist, are historical snapshots. Update installation examples to use Git when changing this package.
