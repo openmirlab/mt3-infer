@@ -1,5 +1,8 @@
 # MT3-Infer
 
+> **Current installation:** `pip install "mt3-infer @ git+https://github.com/openmirlab/mt3-infer.git"`
+> OpenMIRLab no longer publishes new versions to PyPI. Any existing PyPI releases are historical snapshots.
+
 **Production-ready, unified inference toolkit for the MT3 music transcription model family**
 
 MT3-Infer provides a clean, framework-neutral API for running music transcription inference across multiple MT3 implementations with a single consistent interface.
@@ -7,7 +10,6 @@ MT3-Infer provides a clean, framework-neutral API for running music transcriptio
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/mt3-infer)](https://pypi.org/project/mt3-infer/)
 
 ---
 
@@ -129,14 +131,14 @@ override) handled consistently across backends.
 
 ### Basic Installation
 
-MT3-Infer is available on [PyPI](https://pypi.org/project/mt3-infer/).
+MT3-Infer is maintained on [GitHub](https://github.com/openmirlab/mt3-infer).
 
 ```bash
 # Using pip
-pip install mt3-infer
+pip install "mt3-infer @ git+https://github.com/openmirlab/mt3-infer.git"
 
 # Using UV (recommended for development)
-uv pip install mt3-infer
+uv pip install "mt3-infer @ git+https://github.com/openmirlab/mt3-infer.git"
 ```
 
 ### Development Installation
@@ -157,19 +159,19 @@ pip install -e ".[torch,dev]"
 
 ```bash
 # PyTorch backend (default)
-pip install mt3-infer[torch]
+pip install "mt3-infer[torch] @ git+https://github.com/openmirlab/mt3-infer.git"
 
 # TensorFlow backend
-pip install mt3-infer[tensorflow]
+pip install "mt3-infer[tensorflow] @ git+https://github.com/openmirlab/mt3-infer.git"
 
 # All backends
-pip install mt3-infer[all]
+pip install "mt3-infer[all] @ git+https://github.com/openmirlab/mt3-infer.git"
 
 # Development tools
-pip install mt3-infer[dev]
+pip install "mt3-infer[dev] @ git+https://github.com/openmirlab/mt3-infer.git"
 
 # MIDI synthesis (optional)
-pip install mt3-infer[synthesis]
+pip install "mt3-infer[synthesis] @ git+https://github.com/openmirlab/mt3-infer.git"
 ```
 
 ---
